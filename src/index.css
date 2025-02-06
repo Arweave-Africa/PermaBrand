@@ -1,6 +1,5 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-    --dark: "#212121";
-  }
-  
+	--dark: '#212121';
+}
