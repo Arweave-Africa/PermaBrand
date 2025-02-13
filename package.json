@@ -6,14 +6,27 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "deploy": "npm run build && DEPLOY_KEY=$(base64 -i wallet.json) npx permaweb-deploy --ant-process ES6C9R2ZuMSu8hAWn_VUbqb0NeWk-9qBGYX1USNIZm8",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ardrive/turbo-sdk": "^1.22.1",
+    "@arweave-wallet-kit/arconnect-strategy": "^0.1.0",
+    "@arweave-wallet-kit/core": "^0.1.0",
+    "@arweave-wallet-kit/react": "^0.1.0",
+    "@arweave-wallet-kit/styles": "^0.1.0",
+    "@permaweb/aoconnect": "^0.0.67",
     "@tailwindcss/vite": "^4.0.3",
+    "@tanstack/react-query": "^5.66.0",
+    "arweave": "^1.15.5",
+    "prettier": "^3.4.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwindcss": "^4.0.3"
+    "react-hot-toast": "^2.5.1",
+    "react-router-dom": "^7.1.5",
+    "tailwindcss": "^4.0.3",
+    "vite-plugin-node-polyfills": "^0.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
