@@ -5,12 +5,26 @@ import useFolder from "../../hooks/use-folder"
 
 const Brandkit:FC<{brandkit:TBrandkit}> = ({brandkit}) => {
     const navigate = useNavigate()
-    const { files } = useFolder(brandkit.folderId)
-    console.log(files)
+    const { files, isLoading } = useFolder(brandkit.folderId)
+
+    const handleGoToBrandkit = () => {
+      navigate(`/brandkit/${brandkit.creator}`, { 
+        state:{
+          brandkit, 
+          files
+        }
+      })
+    }
+
+    if(isLoading) return <div>Loading...</div>
+    
+    //@ts-ignore
+    const randomFileId = Object.values(files!)[Math.floor(Math.random() * Object.values(files!).length)].id
+
   return (
-    <div onClick={() =>navigate(`/brandkit/${brandkit.creator}`, { state:brandkit})} className="w-[300px] p-4 rounded-lg bg-[#F9F9F9] border border-[#D5D5D5] cursor-pointer hover:border-blue-500 group">
+    <div onClick={handleGoToBrandkit} className="w-[300px] p-4 rounded-lg bg-[#F9F9F9] border border-[#D5D5D5] cursor-pointer hover:border-blue-500 group">
         <div className="w-full h-20 rounded-lg flex justify-center">
-            <img className="h-full shadow-sm m-1 rounded-lg object-contain" src={""} alt="" />
+            <img className="h-full shadow-sm m-1 rounded-lg object-contain" src={`https://arweave.net/${randomFileId}`} alt={Object.keys(files!)[0] || "brandkit main logo"} />
         </div>
         <h3 className="font-[500] my-4 text-center">{brandkit.name || "Arweavers to the moon"}</h3>
         <p className="h-16 w-[250px] text-[#555555] text-sm font-light overflow-hidden mb-4">{brandkit.description || "No Description provided"}</p>

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { arrayBufferToFileList } from "../lib/arweave";
 
 const useFolder = (txid: string) => {
     const {
@@ -10,17 +9,10 @@ const useFolder = (txid: string) => {
     queryKey: ["brandkit-folder", txid],
     queryFn: async () => {
       try {
-        const request = await fetch(`https://arweave.net/${txid}`);
-        console.log(request)
+        const result = await fetch(`https://arweave.net/raw/${txid}`);
+        const { paths } = await result.json()
 
-        if (request.redirected === true) {
-            const arrayBuffer = await request.arrayBuffer()
-            const files = await arrayBufferToFileList(arrayBuffer)
-            console.log(files)
-          //return request.url;
-        }
-
-        return "";
+        return paths;
       } catch (error) {
         throw new Error("Error fetching brandkit folder.");
       }
