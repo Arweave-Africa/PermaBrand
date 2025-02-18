@@ -9,7 +9,8 @@ import {
 import { useActiveAddress } from "@arweave-wallet-kit/react";
 import { createDataItemSigner, message, result } from "@permaweb/aoconnect";
 import { processId } from "../utils/constants";
-import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk";
+import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
+import { useNavigate } from "react-router-dom";
 
 type FileToDisplay = { url: string; name: any };
 
@@ -21,6 +22,7 @@ const Create = () => {
   );
   const userAddress = useActiveAddress();
   const [uploadingCost, setUploadingCost] = useState(0)
+  const navigate = useNavigate()
 
   const handleBrandKitFolderUpload = async(e: ChangeEvent<HTMLInputElement>) => {
     const { files } = e.target;
@@ -81,20 +83,23 @@ const Create = () => {
       
       const signer = new ArconnectSigner(window.arweaveWallet)
       const turbo = TurboFactory.authenticated({ signer });
-      /*const { manifest, fileResponses, manifestResponse } = await turbo.uploadFolder({ files:Array.from(folder).map((file) => file)})
-      console.log("manifest", manifest)
-      console.log("fileResponses", fileResponses)
-      console.log("manifestResponse", manifestResponse)*/
-      return
-      //const arweaveId = await uploadToArweave(folder, name);
+      const filteredFolder = Object.values(folder).filter(
+        //@ts-ignore
+        (value, index) => {
+          return value.name !== ".DS_Store"
+        }
+      )
+     
+     const { manifestResponse } = await turbo.uploadFolder({ files:filteredFolder.map((file) => file)})
+
       const tags = [
         { name: "Action", value: "Add-Brandkit" },
         { name: "Name", value: name },
-        { name: "ArweaveId", value: manifest?.index },
+        { name: "ArweaveId", value: manifestResponse?.id },
       ];
 
       if (description) {
-        [...tags, { name: "Description", value: description }];
+        tags.push({ name: "Description", value: description })
       }
       const messageId = await message({
         process:processId,
@@ -102,15 +107,20 @@ const Create = () => {
         tags
       });
 
-      let { Messages } = await result({
+      /*let { Messages } = */await result({
         message: messageId,
         process: processId,
       });
-
-      console.log(Messages[0])
-      console.log(Messages[0].Data)
+      //const res = JSON.parse(Messages[0].Data)
       toast.success("yeeeee");
       setIsLoading(false)
+      navigate("/")
+      /*navigate(`/brandkit/${res.creator}`, { 
+        state:{
+          brandkit:res, 
+          files: []
+        }
+      })*/
     } catch (error) {
       console.log(error);
       //@ts-ignore
@@ -166,6 +176,7 @@ const Create = () => {
                 <input
                   onChange={handleBrandKitFolderUpload}
                   type="file"
+                  accept="image/*"
                   //@ts-expect-error
                   directory=""
                   webkitdirectory=""

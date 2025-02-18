@@ -31,15 +31,15 @@ const Home = () => {
   });
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-[calc(100vh-5rem)] w-full">
       <div className="py-10 w-full flex justify-center bg-[#F3F3F3] relative">
         <div className="w-11/12 md:w-9/12 lg:w-9/12 xl:w-7/12 flex flex-col items-center">
-          <div className="text-4xl lg:text-5xl xl:text-7xl font-bold tracking-wider">
+          <div className="text-3xl lg:text-5xl xl:text-7xl font-bold tracking-wider">
             Explore and Share <br />
             Arweave <span className="text-blue-600">BrandKits</span>
           </div>
           <div className="flex justify-center">
-            <p className="my-10 px-5 lg:px-0 text-lg text-[#555555] font-[500] xl:text-3xl text-center">
+            <p className="my-10 px-5 lg:px-0 text-sm sm:text-lg text-[#555555] font-[500] xl:text-3xl text-center">
               Upload and showcase your brand assets <br /> with the Arweave
               ecosystem
             </p>
@@ -57,7 +57,7 @@ const Home = () => {
           <img
             src={lines_logo}
             alt="lines"
-            className="h-[200px] sm:h-[300px] lg:h-[400px] absolute left-0 top-5"
+            className="h-[150px] sm:h-[300px] lg:h-[400px] absolute left-0 top-5"
           />
         </div>
       </div>
@@ -70,7 +70,10 @@ const Home = () => {
           </div>
         </div>
         { !isLoading && <div className="flex justify-center gap-4 flex-wrap pb-10">
-          {Object.values(brandkits).map((brandkit, index:number) => <Brandkit key={index} brandkit={brandkit}/>)}
+          {Object.values(brandkits).map((brandkit:any, index:number) => <Brandkit key={index} brandkit={brandkit}/>)}
+        </div>}
+        { !isLoading && brandkits.length == 0 && <div className="flex justify-center">
+          <i className="text-gray-500 font-light md:text-xl">No Brandkits found</i>
         </div>}
         {isLoading && <div className="flex justify-center gap-4 flex-wrap pb-10">
           {Array(6).fill("").map((_, index) => <BrandkitCardLoading key={index}/>)}
