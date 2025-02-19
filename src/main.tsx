@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { ArweaveWalletKit } from "@arweave-wallet-kit/react";
-import ArConnectStrategy from "@arweave-wallet-kit/arconnect-strategy";
+import WanderStrategy from "@arweave-wallet-kit/wander-strategy";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Create a client
@@ -28,7 +28,7 @@ createRoot(document.getElementById("root")!).render(
           "SIGNATURE"
         ],
         ensurePermissions: true,
-        strategies: [new ArConnectStrategy()],
+        strategies: [new WanderStrategy()],
       }}
     >
       <App />

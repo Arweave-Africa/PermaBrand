@@ -112,7 +112,7 @@ const Create = () => {
         process: processId,
       });
       //const res = JSON.parse(Messages[0].Data)
-      toast.success("yeeeee");
+      toast.success("Brandkit uploaded and registered! Congratulations!");
       setIsLoading(false)
       navigate("/")
       /*navigate(`/brandkit/${res.creator}`, { 
@@ -141,6 +141,7 @@ const Create = () => {
           <div className="text-sm md:text-xl mb-2 text-gray-500">
             Upload Your Brand Assets
           </div>
+          <div className="text-sm font-light text-gray-500 mb-2">Put all your images in one folder and just upload the folder</div>
           <div className="w-[350px] h-[100px] sm:w-[500px] md:w-[600px] rounded-xl border-[1px] border-dashed border-[var(--light-gray)]">
             {folderToDisplay?.length > 0 && (
               <div className="h-full w-full relative flex gap-4 items-center px-2 overflow-x-scroll">

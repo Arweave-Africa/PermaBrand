@@ -1,15 +1,15 @@
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import permabrand_logo from "../assets/logo_black.svg";
 import { truncate } from "../utils";
-import Profile from "./modals/Profile";
-import { useState } from "react";
+//import Profile from "./modals/Profile";
+//import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const { connect, connected } = useConnection();
   const activeAddress = useActiveAddress();
   const navigate = useNavigate()
-  const [toggleProfileModal, setToggleProfileModal] = useState(false);
+  //const [toggleProfileModal, setToggleProfileModal] = useState(false);
 
   const handleConnect = async () => {
     try {
@@ -40,13 +40,13 @@ const Navbar = () => {
       )}
       {connected && (
         <div
-          onClick={() => setToggleProfileModal(true)}
+          //onClick={() => setToggleProfileModal(true)}
           className="px-2 py-1 text-[#212121] rounded-md border border-[#212121] hover:bg-[#212121] hover:text-white cursor-pointer"
         >
           {truncate(activeAddress!)}
         </div>
       )}
-      {toggleProfileModal && <Profile closeModal={setToggleProfileModal} />}
+      {/*toggleProfileModal && <Profile closeModal={setToggleProfileModal} />*/}
     </div>
   );
 };
