@@ -6,8 +6,8 @@ import {
   getARBalance,
   getUploadingPrice
 } from "../lib/arweave";
-import { useActiveAddress } from "@arweave-wallet-kit/react";
-import { createDataItemSigner, message, result } from "@permaweb/aoconnect";
+import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
+import { createDataItemSigner, dryrun, message, result } from "@permaweb/aoconnect";
 import { processId } from "../utils/constants";
 import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ const Create = () => {
     [],
   );
   const userAddress = useActiveAddress();
+  const { connect } = useConnection()
   const [uploadingCost, setUploadingCost] = useState(0)
   const navigate = useNavigate()
 
@@ -45,6 +46,10 @@ const Create = () => {
     const uploadingPrice = await getUploadingPrice(files!);
     setUploadingCost(uploadingPrice)
   };
+
+  const connectWallet = async() => {
+    await connect()
+  }
 
   const handleDeleteFolder = () => {
     setFolder({} as FileList);
@@ -76,8 +81,26 @@ const Create = () => {
       const uploadingPrice = await getUploadingPrice(folder);
 
       if (userBalance < uploadingPrice) {
+        setIsLoading(false);
         return toast(
           "Your AR Balance is too low to upload your Brandkit on Arweave",
+        );
+      }
+
+      const { Messages } = await dryrun({
+        process:processId,
+        tags: [
+          { name: "Action", value: "Get-Brandkit-By-Profile" },
+          { name: "Address", value: userAddress },
+        ]
+      })
+
+      const brandkit = JSON.parse(Messages[0].Data)
+      
+      if (brandkit) {
+        setIsLoading(false);
+        return toast(
+          `Your address cannot upload another Brandkit. You already uploaded ${brandkit.name} brandkit`,
         );
       }
       
@@ -113,6 +136,7 @@ const Create = () => {
       });
       //const res = JSON.parse(Messages[0].Data)
       toast.success("Brandkit uploaded and registered! Congratulations!");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setIsLoading(false)
       navigate("/")
       /*navigate(`/brandkit/${res.creator}`, { 
@@ -128,6 +152,7 @@ const Create = () => {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="min-h-[calc(100vh-var(--navbar-h))] w-full flex justify-center py-3 px-2 sm:px-12 md:py-8">
       <form
@@ -215,7 +240,15 @@ const Create = () => {
           </div>
         </div>
         <div className="flex w-full justify-center mt-10">
-          {!isLoading && (
+          {!isLoading && !userAddress && (
+            <button
+              onClick={connectWallet}
+              className="bg-[#212121] text-white rounded-xl h-8 w-[200px] cursor-pointer hover:scale-105 transition-all delay-75"
+            >
+              Connect Wallet
+            </button>
+          )}
+          {!isLoading && userAddress && (
             <button
               type="submit"
               className="bg-[#212121] text-white rounded-xl h-8 w-[200px] cursor-pointer hover:scale-105 transition-all delay-75"
@@ -226,7 +259,7 @@ const Create = () => {
           {isLoading && (
             <button
               disabled
-              className="bg-[#212121] text-white rounded-xl h-8 w-[200px] cursor-pointer hover:scale-105 transition-all delay-75"
+              className="bg-[#212121] text-white rounded-xl h-8 w-[200px] cursor-pointer hover:scale-105 transition-all delay-75 cursor-not-allowed"
             >
               loading...
             </button>

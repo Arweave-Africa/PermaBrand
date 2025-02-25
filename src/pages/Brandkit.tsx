@@ -49,7 +49,7 @@ const LogoCard = ({file}:{file:TBrandkit}) => {
   }
   
   return (
-    <div className="relative h-20 w-64 md:h-24 md:w-72 flex items-center justify-center rounded-lg p-2 border border-gray-200">
+    <div className="relative h-28 w-64 md:h-34 md:w-72 flex items-center justify-center rounded-lg p-2 border border-gray-200">
             <Logo url={file.id} alt={file.name}/>
             <div onClick={() => copy(file.id)} className="absolute bottom-0.5 right-0.5 md:bottom-2 md:right-2 h-5 w-5 md:h-6 md:w-6 cursor-pointer rounded-full border-1 border-gray-300 hover:border-black" >
               <img src={!copySuccess ? copy_logo : copy_success_logo} alt="copy" className="h-full w-full p-1" />
