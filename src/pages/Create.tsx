@@ -259,7 +259,7 @@ const Create = () => {
           {isLoading && (
             <button
               disabled
-              className="bg-[#212121] text-white rounded-xl h-8 w-[200px] cursor-pointer hover:scale-105 transition-all delay-75 cursor-not-allowed"
+              className="bg-[#212121] text-white rounded-xl h-8 w-[200px] hover:scale-105 transition-all delay-75 cursor-not-allowed"
             >
               loading...
             </button>
