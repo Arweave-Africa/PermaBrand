@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import lines_logo from "../assets/hero-bg.svg";
-import search from "../assets/search.svg"
+//import search from "../assets/search.svg"
 import Brandkit from "../components/cards/Brandkit";
 import { useQuery } from "@tanstack/react-query";
 import { processId } from "../utils/constants";
 import { dryrun } from "@permaweb/aoconnect";
 import BrandkitCardLoading from "../components/skeletons/BrandkitCardLoading";
+import { useEffect, useState } from "react";
 
 const Home = () => {
 
@@ -29,6 +30,30 @@ const Home = () => {
       }
     },
   });
+  const [filteredBrandkits, setFilteredBrandkits] = useState(brandkits);
+  const [name, setName] = useState('')
+ 
+  const searchName= (name: string) => {
+    if (name.trim().length == 0) {
+      setFilteredBrandkits(brandkits)
+      return;
+    }
+
+    const result = Object.values(brandkits).filter((brandkit:any) => String(brandkit.name).toLocaleLowerCase().includes(name.toLocaleLowerCase()));
+    setFilteredBrandkits(result);
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchName(name);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  useEffect(() => {
+    setFilteredBrandkits(brandkits)
+  }, [brandkits]);
 
   return (
     <div className="min-h-[calc(100vh-5rem)] w-full">
@@ -65,14 +90,14 @@ const Home = () => {
       <div className="w-11/12 lg:w-10/12 xl:w-[1200px] py-8" id="brandkits">
         <div className="w-full flex justify-center mb-8">
           <div className="bg-[#F3F3F3] border border-[#D5D5D5] rounded-lg h-12 px-1 md:px-2 w-[350px] sm:w-[450px] md:w-[600px] flex items-center">
-            <input type="text" className="flex-1 h-9 outline-none" placeholder="Search for Company/Community Name" />
-            <div className="h-9 bg-black text-white rounded-lg flex items-center justify-center tracking-wide px-1 md:px-2"> <img src={search} alt="search" className="h-5 mx-1" /> <span className="hidden md:flex">Search</span></div>
+            <input type="text" onChange={(e) => setName(e.target.value)} className="flex-1 h-9 outline-none" placeholder="Search for Company/Community Name" />
+            {/*<div className="h-9 bg-black text-white rounded-lg flex items-center justify-center tracking-wide px-1 md:px-2"> <img src={search} alt="search" className="h-5 mx-1" /> <span className="hidden md:flex">Search</span></div>*/}
           </div>
         </div>
         { !isLoading && <div className="flex justify-center gap-4 flex-wrap pb-10">
-          {Object.values(brandkits).map((brandkit:any, index:number) => <Brandkit key={index} brandkit={brandkit}/>)}
+          {Object.values(filteredBrandkits?? {}).map((brandkit:any, index:number) => <Brandkit key={index} brandkit={brandkit}/>)}
         </div>}
-        { !isLoading && brandkits.length == 0 && <div className="flex justify-center">
+        { !isLoading && filteredBrandkits?.length == 0 && <div className="flex justify-center">
           <i className="text-gray-500 font-light md:text-xl">No Brandkits found</i>
         </div>}
         {isLoading && <div className="flex justify-center gap-4 flex-wrap pb-10">
