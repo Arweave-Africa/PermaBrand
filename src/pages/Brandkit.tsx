@@ -43,7 +43,7 @@ const LogoCard = ({file}:{file:TBrandkit}) => {
   const [copySuccess, setCopySuccess] = useState(false)
 
   const copy = (text:string) => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(`https://arweave.net/raw/${text}`)
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 1000);
   }
