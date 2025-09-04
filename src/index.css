@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  font-family: "Noto Sans Mono", monospace;
   --dark: "#212121";
   --light-gray: "#979797";
   --navbar-h: "5rem";

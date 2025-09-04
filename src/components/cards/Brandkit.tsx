@@ -1,47 +1,31 @@
-import { useNavigate } from "react-router-dom"
-import { TBrandkit } from "../../types"
-import { FC } from "react"
-import useFolder from "../../hooks/use-folder"
-import arrow_right from "../../assets/arrow_right.svg";
+import { useNavigate } from "react-router-dom";
+import { TBrandkit } from "../../types";
+import { FC } from "react";
+import folder_icon from "../../assets/folder.svg";
 
-const Brandkit:FC<{brandkit:TBrandkit}> = ({brandkit}) => {
-    const navigate = useNavigate()
-    const { files, isLoading } = useFolder(brandkit.folderId)
+const Brandkit: FC<{ brandkit: TBrandkit }> = ({ brandkit }) => {
+  const navigate = useNavigate();
 
-    const handleGoToBrandkit = () => {
-      navigate(`/brandkit/${brandkit.creator}`, { 
-        state:{
-          brandkit, 
-          files
-        }
-      })
-    }
-
-    if(isLoading) return <div>Loading...</div>
-    
-    //@ts-ignore
-    const randomFileId = Object.values(files!)[Math.floor(Math.random() * Object.values(files!).length)].id
+  const handleGoToBrandkit = () => {
+    navigate(`/brandkit/${brandkit.id}`);
+  };
 
   return (
-    <div onClick={handleGoToBrandkit} className="w-[300px] p-4 rounded-lg bg-[#F9F9F9] border border-[#D5D5D5] cursor-pointer hover:border-blue-500 group">
-        <div className="w-full h-20 rounded-lg flex justify-center">
-            <img className="h-full shadow-sm m-1 rounded-lg object-contain" src={`https://arweave.net/${randomFileId}`} alt={Object.keys(files!)[0] || "brandkit main logo"} />
-        </div>
-        <h3 className="font-[500] my-4 text-center">{brandkit.name || "Arweavers to the moon"}</h3>
-        <p className="h-16 w-[250px] text-[#555555] text-sm font-light overflow-hidden mb-4">{brandkit.description || "No Description provided"}</p>
-        <div className="flex w-full justify-end">
-        <div className="group w-32 flex items-center justify-end hover:justify-center transition-all ease-in-out delay-50">
-          <span>View Kit</span>{" "}
-            <img
-            src={arrow_right}
-            color="blue"
-            alt="arrow right"
-            className="h-4 w-0 group-hover:w-6 transition-all ease-in-out delay-50"
-          />
-        </div> 
-        </div>
+    <div
+      onClick={handleGoToBrandkit}
+      className="w-11/12 md:w-[700px] p-4 rounded-lg bg-[#F9F9F9] border border-[#D5D5D5] cursor-pointer hover:border-gray-400 group"
+    >
+      <div className="flex items-center mb-4">
+        <img src={folder_icon} alt="folder" className="h-8" />
+        <h3 className="font-[500] ml-3">
+          {brandkit.name || "Arweavers to the moon"}
+        </h3>
+      </div>
+      <p className="text-sm font-light overflow-hidden mb-4">
+        {brandkit.description || "No Description provided"}
+      </p>
     </div>
-  )
-}
+  );
+};
 
-export default Brandkit
+export default Brandkit;

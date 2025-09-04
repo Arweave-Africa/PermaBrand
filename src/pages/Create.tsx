@@ -2,12 +2,14 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import upload_logo from "../assets/upload.svg";
 import trash_logo from "../assets/trash.svg";
 import toast, { Toaster } from "react-hot-toast";
-import {
-  getARBalance,
-  getUploadingPrice
-} from "../lib/arweave";
+import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-import { createDataItemSigner, dryrun, message, result } from "@permaweb/aoconnect";
+import {
+  createDataItemSigner,
+  dryrun,
+  message,
+  result,
+} from "@permaweb/aoconnect";
 import { processId } from "../utils/constants";
 import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import { useNavigate } from "react-router-dom";
@@ -21,11 +23,13 @@ const Create = () => {
     [],
   );
   const userAddress = useActiveAddress();
-  const { connect } = useConnection()
-  const [uploadingCost, setUploadingCost] = useState(0)
-  const navigate = useNavigate()
+  const { connect } = useConnection();
+  const [uploadingCost, setUploadingCost] = useState(0);
+  const navigate = useNavigate();
 
-  const handleBrandKitFolderUpload = async(e: ChangeEvent<HTMLInputElement>) => {
+  const handleBrandKitFolderUpload = async (
+    e: ChangeEvent<HTMLInputElement>,
+  ) => {
     const { files } = e.target;
     setFolder(files || ({} as FileList));
     const filteredFolder = Object.keys(files!).filter(
@@ -44,17 +48,17 @@ const Create = () => {
     });
     setFolderToDisplay(transformedFolder);
     const uploadingPrice = await getUploadingPrice(files!);
-    setUploadingCost(uploadingPrice)
+    setUploadingCost(uploadingPrice);
   };
 
-  const connectWallet = async() => {
-    await connect()
-  }
+  const connectWallet = async () => {
+    await connect();
+  };
 
   const handleDeleteFolder = () => {
     setFolder({} as FileList);
     setFolderToDisplay([]);
-    setUploadingCost(0)
+    setUploadingCost(0);
   };
 
   const handleRegisterBrandkit = async (e: FormEvent) => {
@@ -87,33 +91,18 @@ const Create = () => {
         );
       }
 
-      const { Messages } = await dryrun({
-        process:processId,
-        tags: [
-          { name: "Action", value: "Get-Brandkit-By-Profile" },
-          { name: "Address", value: userAddress },
-        ]
-      })
-
-      const brandkit = JSON.parse(Messages[0].Data)
-      
-      if (brandkit) {
-        setIsLoading(false);
-        return toast(
-          `Your address cannot upload another Brandkit. You already uploaded ${brandkit.name} brandkit`,
-        );
-      }
-      
-      const signer = new ArconnectSigner(window.arweaveWallet)
+      const signer = new ArconnectSigner(window.arweaveWallet);
       const turbo = TurboFactory.authenticated({ signer });
       const filteredFolder = Object.values(folder).filter(
         //@ts-ignore
         (value, index) => {
-          return value.name !== ".DS_Store"
-        }
-      )
-     
-     const { manifestResponse } = await turbo.uploadFolder({ files:filteredFolder.map((file) => file)})
+          return value.name !== ".DS_Store";
+        },
+      );
+
+      const { manifestResponse } = await turbo.uploadFolder({
+        files: filteredFolder.map((file) => file),
+      });
 
       const tags = [
         { name: "Action", value: "Add-Brandkit" },
@@ -122,23 +111,23 @@ const Create = () => {
       ];
 
       if (description) {
-        tags.push({ name: "Description", value: description })
+        tags.push({ name: "Description", value: description });
       }
       const messageId = await message({
-        process:processId,
+        process: processId,
         signer: createDataItemSigner(window.arweaveWallet),
-        tags
+        tags,
       });
 
-      /*let { Messages } = */await result({
+      /*let { Messages } = */ await result({
         message: messageId,
         process: processId,
       });
       //const res = JSON.parse(Messages[0].Data)
       toast.success("Brandkit uploaded and registered! Congratulations!");
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      setIsLoading(false)
-      navigate("/")
+      setIsLoading(false);
+      navigate("/");
       /*navigate(`/brandkit/${res.creator}`, { 
         state:{
           brandkit:res, 
@@ -166,7 +155,9 @@ const Create = () => {
           <div className="text-sm md:text-xl mb-2 text-gray-500">
             Upload Your Brand Assets
           </div>
-          <div className="text-sm font-light text-gray-500 mb-2">Put all your images in one folder and just upload the folder</div>
+          <div className="text-sm font-light text-gray-500 mb-2">
+            Put all your images in one folder and just upload the folder
+          </div>
           <div className="w-[350px] h-[100px] sm:w-[500px] md:w-[600px] rounded-xl border-[1px] border-dashed border-[var(--light-gray)]">
             {folderToDisplay?.length > 0 && (
               <div className="h-full w-full relative flex gap-4 items-center px-2 overflow-x-scroll">
@@ -213,7 +204,13 @@ const Create = () => {
               </div>
             )}
           </div>
-          <div className="my-2 text-gray-500 text-sm font-light"><i>Your uploading cost is <span className="text-black font-semibold">{uploadingCost}</span> AR</i></div>
+          <div className="my-2 text-gray-500 text-sm font-light">
+            <i>
+              Your uploading cost is{" "}
+              <span className="text-black font-semibold">{uploadingCost}</span>{" "}
+              AR
+            </i>
+          </div>
         </div>
         <div className="mt-6 text-sm">
           <div className="text-sm md:text-xl mb-2  text-gray-500">

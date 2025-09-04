@@ -1,4 +1,3 @@
-import "./App.css";
 import Navbar from "./components/Navbar";
 import Create from "./pages/Create";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -11,9 +10,9 @@ function App() {
       <BrowserRouter>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Home/>} />
-          <Route path="/create" element={<Create/>} />
-          <Route path="/brandkit/:address" element={<Brandkit/>} />
+          <Route path="/" element={<Home />} />
+          <Route path="/create" element={<Create />} />
+          <Route path="/brandkit/:brandkitId" element={<Brandkit />} />
         </Routes>
       </BrowserRouter>
     </div>

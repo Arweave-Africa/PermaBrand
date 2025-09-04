@@ -18,21 +18,20 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-    <ArweaveWalletKit
-      config={{
-        permissions: [
-          "ACCESS_ADDRESS",
-          "ACCESS_PUBLIC_KEY",
-          "SIGN_TRANSACTION",
-          //"DISPATCH",
-          "SIGNATURE"
-        ],
-        ensurePermissions: true,
-        strategies: [new WanderStrategy()],
-      }}
-    >
-      <App />
-    </ArweaveWalletKit>
+      <ArweaveWalletKit
+        config={{
+          permissions: [
+            "ACCESS_ADDRESS",
+            "ACCESS_PUBLIC_KEY",
+            "SIGN_TRANSACTION",
+            "SIGNATURE",
+          ],
+          ensurePermissions: true,
+          strategies: [new WanderStrategy()],
+        }}
+      >
+        <App />
+      </ArweaveWalletKit>
     </QueryClientProvider>
   </StrictMode>,
 );
