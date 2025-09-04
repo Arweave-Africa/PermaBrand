@@ -6,7 +6,6 @@ import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import {
   createDataItemSigner,
-  dryrun,
   message,
   result,
 } from "@permaweb/aoconnect";
@@ -104,10 +103,14 @@ const Create = () => {
         files: filteredFolder.map((file) => file),
       });
 
+      if(!manifestResponse?.id) {
+        return toast.error("Failed to upload brandkit. Please try again.")
+      }
+
       const tags = [
         { name: "Action", value: "Add-Brandkit" },
         { name: "Name", value: name },
-        { name: "ArweaveId", value: manifestResponse?.id },
+        { name: "ArweaveId", value: manifestResponse.id },
       ];
 
       if (description) {
@@ -127,13 +130,8 @@ const Create = () => {
       toast.success("Brandkit uploaded and registered! Congratulations!");
       await new Promise((resolve) => setTimeout(resolve, 3000));
       setIsLoading(false);
-      navigate("/");
-      /*navigate(`/brandkit/${res.creator}`, { 
-        state:{
-          brandkit:res, 
-          files: []
-        }
-      })*/
+      
+      navigate(`/brandkit/${manifestResponse.id}`);
     } catch (error) {
       console.log(error);
       //@ts-ignore
@@ -152,9 +150,6 @@ const Create = () => {
           Upload Kits
         </h2>
         <div>
-          <div className="text-sm md:text-xl mb-2 text-gray-500">
-            Upload Your Brand Assets
-          </div>
           <div className="text-sm font-light text-gray-500 mb-2">
             Put all your images in one folder and just upload the folder
           </div>
@@ -213,9 +208,6 @@ const Create = () => {
           </div>
         </div>
         <div className="mt-6 text-sm">
-          <div className="text-sm md:text-xl mb-2  text-gray-500">
-            Add details
-          </div>
           <div className="flex flex-col md:flex-row gap-4 md:gap-10">
             <div className="flex flex-col gap-1 md:gap-2 text-sm">
               <label htmlFor="">Company / Community Name</label>
@@ -227,7 +219,7 @@ const Create = () => {
               />
             </div>
           </div>
-          <div className="mt-2 flex flex-col gap-1 md:gap-2">
+          <div className="mt-6 flex flex-col gap-1 md:gap-2">
             <label htmlFor="">Description (optional)</label>
             <textarea
               name="description"
