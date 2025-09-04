@@ -146,11 +146,11 @@ const Create = () => {
         onSubmit={handleRegisterBrandkit}
         className="w-full lg:w-10/12 xl:w-1/2 h-full flex flex-col items-center"
       >
-        <h2 className="text-xl mb-4 w-[350px] sm:w-[500px] md:w-[600px] md:text-2xl md:mb-10">
+        <h2 className="text-xl mb-4 text-center sm:text-start w-[350px] sm:w-[500px] md:w-[600px] md:text-2xl md:mb-10">
           Upload Kits
         </h2>
-        <div>
-          <div className="text-sm font-light text-gray-500 mb-2">
+        <div className="flex flex-col items-center sm:items-start">
+          <div className="text-sm font-light invisible sm:visible text-gray-500 mb-2">
             Put all your images in one folder and just upload the folder
           </div>
           <div className="w-[350px] h-[100px] sm:w-[500px] md:w-[600px] rounded-xl border-[1px] border-dashed border-[var(--light-gray)]">
