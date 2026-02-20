@@ -1,0 +1,11 @@
+# NEW MAIN RELEASE
+- name: Permabrand 1.0.0
+  file: index.lua
+  resetModules: true
+  scheduler: _GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA
+  module: Do_Uc2Sju_ffp6Ev0AnLVdPtot15rvMjP-a9VVaA5fM
+  tags:
+    - name: Process-Type
+      value: Permabrand
+    - name: Authority
+      value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY'
