@@ -2,6 +2,7 @@
   "name": "ao",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "chmod +x ./deploy.sh && ./deploy.sh"
@@ -9,8 +10,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "aoform": "^1.0.7"
-  }
+  "description": ""
 }
