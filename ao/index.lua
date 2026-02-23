@@ -55,9 +55,8 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
     Brandkits[name] = brandkit
 
     Send({
-        Target = msg.From,
-        Action = getAction(msg) .. "-response",
-        Data = json.encode(brandkit)
+      device = 'patch@1.0',
+      brandkits = Brandkits
     })
 end)
 

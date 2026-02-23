@@ -1,58 +1,14 @@
 import lines_logo from "../assets/hero-bg.svg";
 import Brandkit from "../components/cards/Brandkit";
-import { useQuery } from "@tanstack/react-query";
-import { processId } from "../utils/constants";
-import { dryrun } from "@permaweb/aoconnect";
-import BrandkitCardLoading from "../components/skeletons/BrandkitCardLoading";
-import { useEffect, useState } from "react";
 import CtaButton from "../components/buttons/CtaButton";
 import { TBrandkit } from "../types";
+import useBrandkits from "../hooks/useBrandkits";
+import useSearch from "../hooks/useSearch";
+import BrandkitCardLoading from "../components/skeletons/BrandkitCardLoading";
 
 const Home = () => {
-  const { isLoading, data: brandkits } = useQuery({
-    queryKey: ["brandkits-fetch"],
-    queryFn: async () => {
-      try {
-        const { Messages } = await dryrun({
-          process: processId,
-          tags: [{ name: "Action", value: "Get-Brandkits" }],
-        });
-        return JSON.parse(Messages[0].Data);
-      } catch (error) {
-        console.log(error);
-        console.error("Error fetching brandkits.");
-      }
-    },
-  });
-
-  const [filteredBrandkits, setFilteredBrandkits] = useState(brandkits);
-  const [name, setName] = useState("");
-
-  const searchName = (name: string) => {
-    if (name.trim().length == 0) {
-      setFilteredBrandkits(brandkits);
-      return;
-    }
-
-    const result = brandkits.filter((brandkit: any) =>
-      String(brandkit.name)
-        .toLocaleLowerCase()
-        .includes(name.toLocaleLowerCase()),
-    );
-    setFilteredBrandkits(result);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      searchName(name);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [name]);
-
-  useEffect(() => {
-    setFilteredBrandkits(brandkits);
-  }, [brandkits]);
+  const { brandkits, isBrandkitsLoading } = useBrandkits();
+  const { searchNameKey, setSearchNameKey, filteredBrandkits } = useSearch(brandkits ?? []);
 
   return (
     <div className="min-h-[calc(100vh-5rem)] w-full">
@@ -83,28 +39,29 @@ const Home = () => {
             <div className="bg-[#F3F3F3] focus-within:bg-white border border-[#D5D5D5] rounded-lg h-10 sm:h-12 px-1 md:px-2 w-[350px] sm:w-[450px] md:w-[600px] flex items-center">
               <input
                 type="text"
-                onChange={(e) => setName(e.target.value)}
+                value={searchNameKey}
+                onChange={(e) => setSearchNameKey(e.target.value)}
                 className="flex-1 h-9 outline-none bg-transparent px-2 sm:px-4"
                 placeholder="Search for Company/Community Name"
               />
             </div>
           </div>
-          {!isLoading && (
+          {!isBrandkitsLoading && (
             <div className="flex flex-col items-center gap-4 flex-wrap pb-10">
-              {(filteredBrandkits?? []).map(
+              {(filteredBrandkits ?? []).map(
                 (brandkit: TBrandkit, index: number) => (
                   <Brandkit key={index} brandkit={brandkit} />
                 ),
               )}
             </div>
           )}
-          {!isLoading && filteredBrandkits?.length == 0 && (
+          {!isBrandkitsLoading && filteredBrandkits?.length == 0 && (
             <div className="flex justify-center">
               <i className="font-semibold">No Brandkits found</i>
             </div>
           )}
 
-          {isLoading && (
+          {isBrandkitsLoading && (
             <div className="flex justify-center gap-4 flex-wrap pb-10">
         {Array(3)
           .fill("")

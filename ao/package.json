@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "chmod +x ./deploy.sh && ./deploy.sh"
+    "deploy": "npx aoform deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "aoform-toolkit": "^1.0.4"
+  }
 }
