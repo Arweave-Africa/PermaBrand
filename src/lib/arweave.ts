@@ -6,27 +6,23 @@ const arweave = Arweave.init({
   protocol: "https",
 });
 
-async function getFolderSize(folder: FileList) {
-  let totalSize = 0;
+async function getFilesSize(files:File[]) {
 
-  async function calculateSize(folder: FileList) {
-    const filteredFolder = Object.values(folder).filter(
-      //@ts-ignore
-      (value, index) => value.name !== ".DS_Store",
-    );
-
-    filteredFolder.forEach((entry) => {
-      totalSize += entry.size;
-    });
+  if (!Array.isArray(files)) {
+    throw new Error("Expected an array of files");
   }
 
-  await calculateSize(folder);
-  return totalSize;
+  return files.reduce((total, file) => {
+    if (!file || typeof file.size !== "number") {
+      throw new Error("Each item must have a numeric 'size' property");
+    }
+    return total + file.size;
+  }, 0);
 }
 
-export const getUploadingPrice = async (folder: FileList) => {
-  const totalFolderSize = await getFolderSize(folder);
-  const price = await arweave.transactions.getPrice(totalFolderSize);
+export const getUploadingPrice = async (files: File[]) => {
+  const totalFilesSize = await getFilesSize(files);
+  const price = await arweave.transactions.getPrice(totalFilesSize);
   return Number(arweave.ar.winstonToAr(price));
 };
 

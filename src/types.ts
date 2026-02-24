@@ -4,4 +4,5 @@ export type TBrandkit = {
   folderId: string;
   id: string;
   name: string;
+  url:string
 };

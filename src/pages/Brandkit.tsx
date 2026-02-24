@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { dryrun } from "@permaweb/aoconnect";
 import { processId } from "../utils/constants";
-import useFolder from "../hooks/use-folder";
+import useFolder from "../hooks/useFolder";
 import BrandkitPageLoader from "../components/skeletons/BrandkitPageLoader";
 import NotFound from "./404";
 

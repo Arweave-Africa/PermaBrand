@@ -7,7 +7,7 @@ const Brandkit: FC<{ brandkit: TBrandkit }> = ({ brandkit }) => {
   const navigate = useNavigate();
 
   const handleGoToBrandkit = () => {
-    navigate(`/brandkit/${brandkit.id}`);
+    navigate(`/${brandkit.url}`);
   };
 
   return (

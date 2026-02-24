@@ -12,7 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/create" element={<Create />} />
-          <Route path="/brandkit/:brandkitId" element={<Brandkit />} />
+          <Route path="/:url" element={<Brandkit />} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -29,7 +29,7 @@ const Create = () => {
       return;
     }
     const uploadingPrice = await getUploadingPrice(
-      files.map((entry) => entry.file) as unknown as FileList,
+      files.map((entry) => entry.file)
     );
     setUploadingCost(uploadingPrice);
   };
@@ -99,7 +99,7 @@ const Create = () => {
     try {
       const userBalance = await getARBalance(userAddress || "");
       const uploadingPrice = await getUploadingPrice(
-        selectedFiles.map((entry) => entry.file) as unknown as FileList,
+        selectedFiles.map((entry) => entry.file)
       );
 
       if (userBalance < uploadingPrice) {
