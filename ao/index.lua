@@ -1,6 +1,6 @@
 local json = require("json")
 
-Brandkits = {} -- { [name] = { id, name, description, folderId, owner } }
+Brandkits = Brandkits or {} -- { [name] = { id, name, url, description, folderId, owner } }
 
 -- Sync once on process load
 InitialSync = InitialSync or 'INCOMPLETE'
@@ -27,6 +27,10 @@ local function sendError(msg, errorMessage)
         Action = getAction(msg) .. "-error",
         Error = errorMessage
     })
+end
+
+local function deriveUrl(name)
+    return (name:gsub("%s+", "-"))
 end
 
 Handlers.add("add-brandkit", "add-brandkit", function(msg)
@@ -57,6 +61,7 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
     local brandkit = {
         id = msg.Id,
         name = name,
+        url = deriveUrl(name),
         description = description,
         folderId = folder_id,
         owner = msg.From
@@ -116,6 +121,7 @@ Handlers.add("update-brandkit", "update-brandkit", function(msg)
     Brandkits[name] = {
         id = brandkit.id,
         name = brandkit.name,
+        url = brandkit.url or deriveUrl(brandkit.name),
         description = description,
         folderId = folderId,
         owner = brandkit.owner
