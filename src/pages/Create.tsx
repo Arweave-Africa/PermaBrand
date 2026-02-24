@@ -4,11 +4,10 @@ import trash_logo from "../assets/trash.svg";
 import toast, { Toaster } from "react-hot-toast";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-//@ts-ignore
-import { connect as aoconnect, createSigner, createDataItemSigner } from '@permaweb/aoconnect/browser';
-import { hb_url, processId } from "../utils/constants";
+import { processId } from "../utils/constants";
 import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import { useNavigate } from "react-router-dom";
+import useAoconnect from "../hooks/useAoconnect";
 
 type FileToDisplay = { file: File; url: string; name: string; key: string };
 
@@ -17,6 +16,7 @@ const Create = () => {
   const [isLoading, setIsLoading] = useState(false);
   const userAddress = useActiveAddress();
   const { connect } = useConnection();
+  const { ao } = useAoconnect()
   const [uploadingCost, setUploadingCost] = useState(0);
   const navigate = useNavigate();
 
@@ -79,10 +79,9 @@ const Create = () => {
     await updateUploadingCost(nextFiles);
   };
 
-  const handleRegisterBrandkit = async (e: FormEvent) => {
+  const handleRegisterBrandkit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    //@ts-ignore
-    const formData = new FormData(e.target);
+    const formData = new FormData(e.currentTarget);
 
     const name = formData.get("name");
     const description = formData.get("description");
@@ -98,7 +97,7 @@ const Create = () => {
     setIsLoading(true);
 
     try {
-      /*const userBalance = await getARBalance(userAddress || "");
+      const userBalance = await getARBalance(userAddress || "");
       const uploadingPrice = await getUploadingPrice(
         selectedFiles.map((entry) => entry.file) as unknown as FileList,
       );
@@ -125,31 +124,21 @@ const Create = () => {
 
       if(!manifestResponse?.id) {
         return toast.error("Failed to upload brandkit. Please try again.")
-      }*/
+      }
 
       const tags = [
         { name: "Action", value: "add-brandkit" },
         { name: "Name", value: name },
-        { name: "Arweave-Manifest-Id", value: "mVek6ol1BAK2vGRC2l3aUhi-Y6pIrxddYRQSj0J7xLM" /*manifestResponse.id*/ },
+        { name: "Arweave-Manifest-Id", value: manifestResponse.id },
       ];
 
       if (description) {
         tags.push({ name: "Description", value: description });
       }
 
-      const ao = aoconnect(
-        { 
-          MODE: "mainnet", 
-          SCHEDULER:"n_XZJhUnmldNFo4dhajoPZWhBXuJk-OcQr5JQ49c4Zo",
-          URL: hb_url,
-          signer:createDataItemSigner(window.arweaveWallet)
-        }
-      )
-
       const messageId = await ao.message({
         process: processId,
-        tags,
-        signer:createDataItemSigner(window.arweaveWallet)
+        tags
       });
 
       const res = await ao.result({
@@ -162,7 +151,7 @@ const Create = () => {
       } 
 
       toast.success("Brandkit uploaded and registered! Congratulations!");
-      navigate(`/${name}`);
+      navigate("/");
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");

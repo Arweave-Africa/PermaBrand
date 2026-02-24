@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { processId } from '../utils/constants';
+import { hb_url, processId } from '../utils/constants';
 
 const useBrandkits = () => {
 
@@ -7,8 +7,9 @@ const useBrandkits = () => {
     queryKey: ["brandkits-fetch"],
     queryFn: async () => {
       try {
-         const url = `https://push.forward.computer/${processId}~process@1.0/compute/brandkits`
+         const url = `${hb_url}/${processId}~process@1.0/compute/brandkits`
         const result = await fetch(url)
+        console.log(result)
         const data = await result.text()
         console.log(data)
       } catch (error) {
