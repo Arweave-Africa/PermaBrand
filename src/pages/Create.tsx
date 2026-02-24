@@ -4,60 +4,79 @@ import trash_logo from "../assets/trash.svg";
 import toast, { Toaster } from "react-hot-toast";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-import {
-  createDataItemSigner,
-  message,
-  result,
-} from "@permaweb/aoconnect";
-import { processId } from "../utils/constants";
+//@ts-ignore
+import { connect as aoconnect, createSigner, createDataItemSigner } from '@permaweb/aoconnect/browser';
+import { hb_url, processId } from "../utils/constants";
 import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import { useNavigate } from "react-router-dom";
 
-type FileToDisplay = { url: string; name: any };
+type FileToDisplay = { file: File; url: string; name: string; key: string };
 
 const Create = () => {
-  const [folder, setFolder] = useState<FileList>();
+  const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [folderToDisplay, setFolderToDisplay] = useState<Array<FileToDisplay>>(
-    [],
-  );
   const userAddress = useActiveAddress();
   const { connect } = useConnection();
   const [uploadingCost, setUploadingCost] = useState(0);
   const navigate = useNavigate();
 
-  const handleBrandKitFolderUpload = async (
-    e: ChangeEvent<HTMLInputElement>,
-  ) => {
-    const { files } = e.target;
-    setFolder(files || ({} as FileList));
-    const filteredFolder = Object.keys(files!).filter(
-      //@ts-ignore
-      (key, index) => files![key].name !== ".DS_Store",
+  const getFileKey = (file: File) =>
+    `${file.name}-${file.size}-${file.lastModified}`;
+
+  const updateUploadingCost = async (files: Array<FileToDisplay>) => {
+    if (files.length === 0) {
+      setUploadingCost(0);
+      return;
+    }
+    const uploadingPrice = await getUploadingPrice(
+      files.map((entry) => entry.file) as unknown as FileList,
     );
-    const transformedFolder = filteredFolder.map((key) => {
-      //@ts-ignore
-      const localPath = URL.createObjectURL(files![key]);
-      const file = {
-        url: localPath,
-        //@ts-ignore
-        name: files![key].name,
-      };
-      return file;
-    });
-    setFolderToDisplay(transformedFolder);
-    const uploadingPrice = await getUploadingPrice(files!);
     setUploadingCost(uploadingPrice);
+  };
+
+  const handleBrandkitFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const { files } = e.target;
+    if (!files || files.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    const filteredFiles = Array.from(files).filter((file) => file.name !== ".DS_Store");
+    const newEntries = filteredFiles.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+      name: file.name,
+      key: getFileKey(file),
+    }));
+
+    const existingKeys = new Set(selectedFiles.map((entry) => entry.key));
+    const uniqueNewEntries = newEntries.filter((entry) => !existingKeys.has(entry.key));
+    const nextFiles = [...selectedFiles, ...uniqueNewEntries];
+
+    setSelectedFiles(nextFiles);
+    await updateUploadingCost(nextFiles);
+    e.target.value = "";
   };
 
   const connectWallet = async () => {
     await connect();
   };
 
-  const handleDeleteFolder = () => {
-    setFolder({} as FileList);
-    setFolderToDisplay([]);
+  const handleDeleteFiles = () => {
+    selectedFiles.forEach((entry) => URL.revokeObjectURL(entry.url));
+    setSelectedFiles([]);
     setUploadingCost(0);
+  };
+
+  const handleRemoveFile = async (key: string) => {
+    const fileToRemove = selectedFiles.find((entry) => entry.key === key);
+    if (fileToRemove) {
+      URL.revokeObjectURL(fileToRemove.url);
+    }
+
+    const nextFiles = selectedFiles.filter((entry) => entry.key !== key);
+    setSelectedFiles(nextFiles);
+    await updateUploadingCost(nextFiles);
   };
 
   const handleRegisterBrandkit = async (e: FormEvent) => {
@@ -68,8 +87,8 @@ const Create = () => {
     const name = formData.get("name");
     const description = formData.get("description");
 
-    if (!folder) {
-      return toast.error("The brandkit folder is missing", { });
+    if (selectedFiles.length === 0) {
+      return toast.error("No files selected");
     }
 
     if (!name) {
@@ -77,70 +96,83 @@ const Create = () => {
     }
 
     setIsLoading(true);
-    await getUploadingPrice(folder);
 
     try {
-      const userBalance = await getARBalance(userAddress || "");
-      const uploadingPrice = await getUploadingPrice(folder);
+      /*const userBalance = await getARBalance(userAddress || "");
+      const uploadingPrice = await getUploadingPrice(
+        selectedFiles.map((entry) => entry.file) as unknown as FileList,
+      );
 
       if (userBalance < uploadingPrice) {
         setIsLoading(false);
-        return toast(
+        return toast.error(
           "Your AR Balance is too low to upload your Brandkit on Arweave",
         );
       }
 
       const signer = new ArconnectSigner(window.arweaveWallet);
       const turbo = TurboFactory.authenticated({ signer });
-      const filteredFolder = Object.values(folder).filter(
-        //@ts-ignore
-        (value, index) => {
-          return value.name !== ".DS_Store";
+      const filteredFiles = selectedFiles
+        .map((entry) => entry.file)
+        .filter((file) => {
+          return file.name !== ".DS_Store";
         },
       );
 
       const { manifestResponse } = await turbo.uploadFolder({
-        files: filteredFolder.map((file) => file),
+        files: filteredFiles
       });
 
       if(!manifestResponse?.id) {
         return toast.error("Failed to upload brandkit. Please try again.")
-      }
+      }*/
 
       const tags = [
-        { name: "Action", value: "Add-Brandkit" },
+        { name: "Action", value: "add-brandkit" },
         { name: "Name", value: name },
-        { name: "ArweaveId", value: manifestResponse.id },
+        { name: "Arweave-Manifest-Id", value: "mVek6ol1BAK2vGRC2l3aUhi-Y6pIrxddYRQSj0J7xLM" /*manifestResponse.id*/ },
       ];
 
       if (description) {
         tags.push({ name: "Description", value: description });
       }
-      const messageId = await message({
+
+      const ao = aoconnect(
+        { 
+          MODE: "mainnet", 
+          SCHEDULER:"n_XZJhUnmldNFo4dhajoPZWhBXuJk-OcQr5JQ49c4Zo",
+          URL: hb_url,
+          signer:createDataItemSigner(window.arweaveWallet)
+        }
+      )
+
+      const messageId = await ao.message({
         process: processId,
-        signer: createDataItemSigner(window.arweaveWallet),
         tags,
+        signer:createDataItemSigner(window.arweaveWallet)
       });
 
-      /*let { Messages } = */ await result({
+      const res = await ao.result({
         message: messageId,
         process: processId,
       });
-      //const res = JSON.parse(Messages[0].Data)
+
+      if(res.Error) {
+        throw new Error(res.Error)
+      } 
+
       toast.success("Brandkit uploaded and registered! Congratulations!");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      setIsLoading(false);
-      
-      navigate(`/brandkit/${manifestResponse.id}`);
+      navigate(`/${name}`);
     } catch (error) {
       console.log(error);
-      //@ts-ignore
-      toast.error(error);
+      toast.error("Something went wrong");
+    }
+    finally{
       setIsLoading(false);
     }
   };
 
-  const hasFiles = folderToDisplay.length > 0;
+  const hasFiles = selectedFiles.length > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden bg-gradient-to-b from-[#f7f8fa] via-[#f3f4f6] to-white px-3 py-6 sm:px-8 md:py-10">
@@ -156,60 +188,71 @@ const Create = () => {
             Create Brandkit
           </p>
           <p className="mt-2 text-sm text-[#5a6576]">
-            Add one folder with your logos and brand files. We will preserve it
-            on Arweave and register it instantly.
+            Select your asset(s). We will preserve them on
+            Arweave and register them instantly.
           </p>
         </div>
 
         <div className="rounded-2xl border border-[#e5e7eb] bg-[#fbfcfd] p-3 sm:p-4">
           {hasFiles && (
             <div className="relative flex h-32 items-center gap-3 overflow-x-auto pr-12">
-              {folderToDisplay.map((file, index) => (
-                <img
-                  key={index}
-                  src={file.url}
-                  alt={file.name}
-                  className="h-24 w-24 shrink-0 rounded-lg border border-[#dde3eb] bg-white p-2 object-contain"
-                />
+              {selectedFiles.map((file) => (
+                <div key={file.key} className="relative h-24 w-24 shrink-0">
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="h-24 w-24 rounded-lg border border-[#dde3eb] bg-white p-2 object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(file.key)}
+                    className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full border border-[#d8dee8] bg-white text-xs leading-none text-[#5a6576] transition hover:border-red-500 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
+              <label
+                htmlFor="files-picker"
+                className="shrink-0 rounded-lg border border-dashed border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#1f2937] cursor-pointer transition hover:border-[#9ca7b8]"
+              >
+                Add more files
+              </label>
               <button
                 type="button"
-                onClick={handleDeleteFolder}
+                onClick={handleDeleteFiles}
                 className="absolute right-1 top-1 h-8 w-8 rounded-full border border-[#d8dee8] bg-white p-1 transition hover:scale-105 hover:border-red-500"
               >
-                <img src={trash_logo} alt="delete folder" className="h-full w-full" />
+                <img src={trash_logo} alt="delete files" className="h-full w-full" />
               </button>
             </div>
           )}
 
           {!hasFiles && (
             <label
-              htmlFor="folder-picker"
+              htmlFor="files-picker"
               className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#cfd7e3] bg-white text-center transition hover:border-[#9ca7b8] hover:bg-[#fafbff]"
             >
               <img src={upload_logo} alt="upload" className="mb-2 h-7 w-7" />
               <div className="text-sm font-medium text-[#1f2937]">
-                Drag and drop or browse your folder
+                Choose one or multiple files to upload
               </div>
               <span className="mt-1 text-xs text-[#748094]">
                 PNG, JPG, SVG and more
               </span>
               <span className="mt-3 rounded-lg border border-[#1f2937] px-4 py-1.5 text-xs font-semibold text-[#1f2937]">
-                Browse Folder
+                Browse Files
               </span>
             </label>
           )}
 
           <input
-            onChange={handleBrandKitFolderUpload}
+            onChange={handleBrandkitFileUpload}
             type="file"
             accept="image/*"
-            //@ts-expect-error
-            directory=""
-            webkitdirectory=""
             multiple
             hidden
-            id="folder-picker"
+            id="files-picker"
           />
         </div>
 
@@ -267,8 +310,9 @@ const Create = () => {
           {isLoading && (
             <button
               disabled
-              className="h-11 w-full cursor-not-allowed rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52"
+              className="h-11 w-full cursor-not-allowed rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52 flex items-center justify-center gap-2"
             >
+              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Uploading...
             </button>
           )}

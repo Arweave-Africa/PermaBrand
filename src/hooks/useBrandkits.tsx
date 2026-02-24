@@ -9,7 +9,8 @@ const useBrandkits = () => {
       try {
          const url = `https://push.forward.computer/${processId}~process@1.0/compute/brandkits`
         const result = await fetch(url)
-        console.log(result)
+        const data = await result.text()
+        console.log(data)
       } catch (error) {
         console.log(error);
         console.error("Error fetching brandkits.");

@@ -1,6 +1,16 @@
 local json = require("json")
 
-Brandkits = Brandkits or {} -- { [name] = { id, name, description, folderId, owner } }
+Brandkits = {} -- { [name] = { id, name, description, folderId, owner } }
+
+-- Sync once on process load
+InitialSync = InitialSync or 'INCOMPLETE'
+if InitialSync == 'INCOMPLETE' then
+  Send({
+    device = 'patch@1.0',
+    brandkits = Brandkits
+  })
+  InitialSync = 'COMPLETE'
+end
 
 local function getAction(msg)
     local tags = msg.Tags or {}
@@ -23,7 +33,7 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
     local tags = msg.Tags or {}
     local name = (tags.Name or ""):lower()
     local description = tags.Description or ""
-    local folder_id = tags["Arweave-Id"] or ""
+    local folder_id = tags["Arweave-Manifest-Id"] or ""
 
     if #name <= 1 then
         sendError(msg, "Name too short")
@@ -101,7 +111,7 @@ Handlers.add("update-brandkit", "update-brandkit", function(msg)
     end
      
     local description = tags.Description or brandkit.description
-    local folderId = tags["Arweave-Id"] or brandkit.folderId
+    local folderId = tags["Arweave-Manifest-Id"] or brandkit.folderId
 
     Brandkits[name] = {
         id = brandkit.id,
