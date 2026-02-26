@@ -10,43 +10,59 @@ import ErrorState from "../components/ErrorState";
 const Home = () => {
   const { brandkits, isBrandkitsLoading, brandkitError } = useBrandkits();
   const { searchNameKey, setSearchNameKey, filteredBrandkits } = useSearch(brandkits ?? []);
+  const hasQuery = searchNameKey.trim().length > 0;
+  const totalBrandkits = brandkits?.length ?? 0;
+  const visibleBrandkits = filteredBrandkits?.length ?? 0;
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] w-full">
-      <div className="py-10 w-full flex justify-center bg-[#F3F3F3]">
-        <div className="w-full flex flex-col items-center">
-          <div className="text-lg sm:text-3xl lg:text-5xl font-bold text-center tracking-wider">
-            Your Brand, Forever <br /> on the Permaweb
-          </div>
+    <div className="min-h-[calc(100vh-5rem)] w-full bg-white">
+      <section className="w-full bg-[#F3F3F3] px-4 py-8 md:py-12">
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-center">
+          <div className="relative w-full overflow-hidden rounded-2xl border border-[#D5D5D5] bg-white px-6 py-10 sm:px-10">
+            <img
+              src={lines_logo}
+              alt="decorative lines"
+              className="pointer-events-none absolute left-0 sm:-left-20 top-0 h-[150px] opacity-80 sm:h-[400px] lg:h-[900px]"
+            />
 
-          <p className="text-xs lg:text-sm text-[#555555] font-[500] text-center mt-5 mb-8 px-20">
-            Upload, share, and preserve your brand assets <br /> on the Permaweb
-          </p>
-          <div className="mt-8">
-            <CtaButton />
-          </div>
-        </div>
-        <div>
-          <img
-            src={lines_logo}
-            alt="lines"
-            className="h-[150px] sm:h-[300px] lg:h-[400px] absolute left-0 top-5"
-          />
-        </div>
-      </div>
-      <div className="flex w-full justify-center">
-        <div className="w-11/12 lg:w-10/12 xl:w-[1200px] py-8" id="brandkits">
-          <div className="w-full flex justify-center mb-8">
-            <div className="bg-[#F3F3F3] focus-within:bg-white border border-[#D5D5D5] rounded-lg h-10 sm:h-12 px-1 md:px-2 w-[350px] sm:w-[450px] md:w-[600px] flex items-center">
-              <input
-                type="text"
-                value={searchNameKey}
-                onChange={(e) => setSearchNameKey(e.target.value)}
-                className="flex-1 h-9 outline-none bg-transparent px-2 sm:px-4"
-                placeholder="Search for Company/Community Name"
-              />
+            <div className="relative z-10 flex w-full flex-col items-center">
+              <h1 className="text-center text-2xl font-bold tracking-wide sm:text-4xl lg:text-5xl">
+                Your Brand, Forever
+                <br />
+                on the Permaweb
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-center text-sm font-[500] text-[#555555] sm:text-base">
+                Upload, share, and preserve your brand assets with long-term access for your team and community.
+              </p>
+
+              <div className="mt-8">
+                <CtaButton />
+              </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="flex w-full justify-center px-4 py-8 md:py-10" id="brandkits">
+        <div className="w-full max-w-[1200px]">
+          <div className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row sm:gap-4">
+            <h2 className="text-xl font-[500] text-[#212121] sm:text-2xl">Brandkits</h2>
+            <div className="rounded-full border border-[#D5D5D5] bg-[#F9F9F9] px-3 py-1 text-xs font-[500] text-[#555555] sm:text-sm">
+              {hasQuery ? `${visibleBrandkits} results for "${searchNameKey}"` : `${totalBrandkits} total`}
+            </div>
+          </div>
+
+          <div className="mb-12 flex w-full justify-center">
+            <input
+              type="text"
+              value={searchNameKey}
+              onChange={(e) => setSearchNameKey(e.target.value)}
+              className="w-full max-w-[620px] rounded-lg border border-[#D5D5D5] bg-white px-4 py-2.5 text-sm font-[500] text-[#212121] placeholder-[#555555] focus:border-[#212121] focus:outline-none focus:ring-1 focus:ring-[#212121] sm:py-3"
+              placeholder="Search for Company/Community Name"
+            />
+          </div>
+
           {!isBrandkitsLoading && brandkitError && (
             <ErrorState
               title="Unable to load brandkits"
@@ -74,14 +90,15 @@ const Home = () => {
 
           {isBrandkitsLoading && (
             <div className="flex justify-center gap-4 flex-wrap pb-10">
-        {Array(3)
-          .fill("")
-          .map((_, index) => (
-            <BrandkitCardLoading key={index} />
-          ))}
-        </div>)}
+              {Array(3)
+                .fill("")
+                .map((_, index) => (
+                  <BrandkitCardLoading key={index} />
+                ))}
+            </div>
+          )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };
