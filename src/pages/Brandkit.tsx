@@ -1,37 +1,27 @@
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import copy_logo from "../assets/copy.svg";
 import copy_success_logo from "../assets/copy-success.svg";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { dryrun } from "@permaweb/aoconnect";
-import { processId } from "../utils/constants";
 import useFolder from "../hooks/useFolder";
 import BrandkitPageLoader from "../components/skeletons/BrandkitPageLoader";
 import NotFound from "./404";
+import useBrandkits from "../hooks/useBrandkits";
+import { useActiveAddress } from "@arweave-wallet-kit/react";
 
 const Brandkit = () => {
   const {pathname} = useLocation();
-  const brandkitId = pathname.replace(/^\/?brandkit\/?/, "");
+  const navigate = useNavigate();
+  const userAddress = useActiveAddress();
+  const brandkitUrl = pathname.replace(/\//g, "");
+  const { brandkits, isBrandkitsLoading } = useBrandkits()
+  const brandkit = brandkits?.find((b) => b.url === brandkitUrl);
+  const { isLoading: filesLoading, files } = useFolder(brandkit?.folderId ?? "");
+  const fileEntries = Object.entries(files);
+  const firstFileId = fileEntries[0]?.[1]?.id;
+  const isCreator = userAddress === brandkit?.creator;
 
-  const { isLoading, data: brandkit } = useQuery({
-    queryKey: ["brandkit-fetch", brandkitId],
-    queryFn: async () => {
-      try {
-        const { Messages } = await dryrun({
-          process: processId,
-          tags: [{ name: "Action", value: "Get-Brandkit" }, { name: "BrandkitId", value: brandkitId }],
-        });
-        return JSON.parse(Messages[0].Data);
-      } catch (error) {
-        console.log(error);
-        console.error("Error fetching brandkit.");
-      }
-    },
-  });
-
-  const {isLoading:filesLoaading, files } = useFolder(brandkit?.folderId || "");
-
-  if (isLoading || filesLoaading) return <BrandkitPageLoader />;
+  if (isBrandkitsLoading || filesLoading) return <BrandkitPageLoader />;
 
   if (!brandkit) return <NotFound/>
 
@@ -40,10 +30,7 @@ const Brandkit = () => {
       <div className="bg-[#F3F3F3] w-full py-5 lg:py-10 px-[5%] md:px-[10%]">
         <div className="flex items-start md:items-center">
           <div className="h-8 w-8 md:h-24 md:w-24 lg:h-40 lg:w-40 mr-2 md:mr-10 rounded-lg border border-gray-200 p-2 flex items-center justify-center">
-            <Logo
-              id={files[Object.keys(files)[0]].id}
-              alt={brandkit.name}
-            />
+            {firstFileId && <Logo id={firstFileId} alt={brandkit.name} />}
           </div>
           <div>
             <h1 className="font-[500] text-lg md:text-3xl mt-0 md:mt-4 mb-4">
@@ -52,6 +39,15 @@ const Brandkit = () => {
             <p className="font-light text-xs md:text-sm max-w-[900px]">
               {brandkit.description || "No Description provided"}
             </p>
+            {isCreator && (
+              <button
+                type="button"
+                onClick={() => navigate(`/edit/${brandkit.url}`)}
+                className="mt-4 rounded-full border border-[#D5D5D5] bg-white px-3 py-1 text-xs font-[500] text-[#212121] transition hover:border-[#9CA3AF] cursor-pointer"
+              >
+                Edit Brandkit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -60,8 +56,8 @@ const Brandkit = () => {
       </h3>
       <div className="w-full flex justify-center pt-4 md:pt-10">
         <div className="max-w-[1500px] flex flex-wrap justify-center gap-x-16 gap-y-8 pb-10 px-4">
-          {Object.entries(files).map(([key, value], index:number) => (
-            <LogoCard key={index} id={(value as {id:string}).id} alt={key}  />
+          {fileEntries.map(([key, value], index:number) => (
+            <LogoCard key={index} id={value.id} alt={key}  />
           ))}
         </div>
       </div>
