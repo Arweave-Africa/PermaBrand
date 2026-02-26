@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
+import { useQueryClient } from "@tanstack/react-query";
 import upload_logo from "../assets/upload.svg";
 import trash_logo from "../assets/trash.svg";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
@@ -18,6 +19,7 @@ const Edit = () => {
   const { url } = useParams();
   const navigate = useNavigate();
   const { ao } = useAoconnect();
+  const queryClient = useQueryClient();
   const { connect } = useConnection();
   const userAddress = useActiveAddress();
   const { brandkits, isBrandkitsLoading } = useBrandkits();
@@ -171,6 +173,7 @@ const Edit = () => {
         throw new Error(res.Error);
       }
 
+      queryClient.invalidateQueries({ queryKey: ["brandkits-fetch"] });
       toast.success("Brandkit updated");
       const nextUrl = trimmedName.toLowerCase().replace(/\s+/g, "-");
       navigate(`/${nextUrl}`);

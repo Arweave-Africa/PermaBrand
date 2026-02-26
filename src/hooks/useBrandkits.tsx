@@ -38,7 +38,12 @@ const toBrandkits = (data: Record<string, unknown>): TBrandkit[] => {
 
 const useBrandkits = () => {
 
-    const { data: brandkits, isLoading:isBrandkitsLoading, error:brandkitError } = useQuery<TBrandkit[]>({
+    const {
+      data: brandkits,
+      isLoading: isBrandkitsLoading,
+      isFetching: isBrandkitsFetching,
+      error: brandkitError,
+    } = useQuery<TBrandkit[]>({
     queryKey: ["brandkits-fetch"],
     queryFn: async () => {
       const url = `${hb_url}/${processId}/now/~lua@5.3a&module=${get_state_module_id}/get_state/serialize~json@1.0`;
@@ -53,7 +58,7 @@ const useBrandkits = () => {
     },
   });
 
-  return { brandkits, isBrandkitsLoading, brandkitError }
+  return { brandkits, isBrandkitsLoading, isBrandkitsFetching, brandkitError }
 }
 
 export default useBrandkits

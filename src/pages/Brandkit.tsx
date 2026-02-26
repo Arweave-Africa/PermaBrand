@@ -14,14 +14,16 @@ const Brandkit = () => {
   const navigate = useNavigate();
   const userAddress = useActiveAddress();
   const brandkitUrl = pathname.replace(/\//g, "");
-  const { brandkits, isBrandkitsLoading } = useBrandkits()
+  const { brandkits, isBrandkitsLoading, isBrandkitsFetching } = useBrandkits()
   const brandkit = brandkits?.find((b) => b.url === brandkitUrl);
   const { isLoading: filesLoading, files } = useFolder(brandkit?.folderId ?? "");
   const fileEntries = Object.entries(files);
   const firstFileId = fileEntries[0]?.[1]?.id;
   const isCreator = userAddress === brandkit?.creator;
 
-  if (isBrandkitsLoading || filesLoading) return <BrandkitPageLoader />;
+  if (isBrandkitsLoading || (!brandkit && isBrandkitsFetching) || (brandkit && filesLoading)) {
+    return <BrandkitPageLoader />;
+  }
 
   if (!brandkit) return <NotFound/>
 
