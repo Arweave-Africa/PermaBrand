@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npx aoform deploy"
+    "deploy-script": "arx upload get_state.lua -w ../wallet.json -t arweave --content-type application/lua",
+    "deploy": "npx aoform deploy --wallet-path ../wallet.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "aoform-toolkit": "^1.0.4"
+    "aoform-toolkit": "^1.0.5"
+  },
+  "dependencies": {
+    "@permaweb/arx": "^1.0.0"
   }
 }

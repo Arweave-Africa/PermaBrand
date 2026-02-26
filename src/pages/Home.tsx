@@ -5,9 +5,10 @@ import { TBrandkit } from "../types";
 import useBrandkits from "../hooks/useBrandkits";
 import useSearch from "../hooks/useSearch";
 import BrandkitCardLoading from "../components/skeletons/BrandkitCardLoading";
+import ErrorState from "../components/ErrorState";
 
 const Home = () => {
-  const { brandkits, isBrandkitsLoading } = useBrandkits();
+  const { brandkits, isBrandkitsLoading, brandkitError } = useBrandkits();
   const { searchNameKey, setSearchNameKey, filteredBrandkits } = useSearch(brandkits ?? []);
 
   return (
@@ -46,7 +47,17 @@ const Home = () => {
               />
             </div>
           </div>
-          {!isBrandkitsLoading && (
+          {!isBrandkitsLoading && brandkitError && (
+            <ErrorState
+              title="Unable to load brandkits"
+              message={
+                brandkitError instanceof Error
+                  ? brandkitError.message
+                  : "Please refresh and try again."
+              }
+            />
+          )}
+          {!isBrandkitsLoading && !brandkitError && (
             <div className="flex flex-col items-center gap-4 flex-wrap pb-10">
               {(filteredBrandkits ?? []).map(
                 (brandkit: TBrandkit, index: number) => (
@@ -55,7 +66,7 @@ const Home = () => {
               )}
             </div>
           )}
-          {!isBrandkitsLoading && filteredBrandkits?.length == 0 && (
+          {!isBrandkitsLoading && !brandkitError && filteredBrandkits?.length == 0 && (
             <div className="flex justify-center">
               <i className="font-semibold">No Brandkits found</i>
             </div>

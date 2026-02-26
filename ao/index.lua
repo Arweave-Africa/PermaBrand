@@ -1,6 +1,6 @@
 local json = require("json")
 
-Brandkits = Brandkits or {} -- { [name] = { id, name, url, description, folderId, owner } }
+Brandkits = Brandkits or {} -- Brandkit = { id, name, url, description, folderId, creator, is_active } }
 
 -- Sync once on process load
 InitialSync = InitialSync or 'INCOMPLETE'
@@ -44,11 +44,6 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
         return
     end
 
-    if Brandkits[name] then
-        sendError(msg, "Brandkit already exists")
-        return
-    end
-
     if #folder_id ~= 43 then
         Send({
             Target = msg.From,
@@ -64,10 +59,11 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
         url = deriveUrl(name),
         description = description,
         folderId = folder_id,
-        owner = msg.From
+        creator = msg.From,
+        is_active = true
     }
 
-    Brandkits[name] = brandkit
+    Brandkits[#Brandkits+1] = brandkit
 
     Send({
       device = 'patch@1.0',
@@ -75,61 +71,62 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
     })
 end)
 
-Handlers.add("get-brandkit", "get-brandkit", function(msg)
-    local tags = msg.Tags or {}
-    local name = tags.Name or ""
-    if not name or name == "" then
-        sendError(msg, "Name is required")
-        return
-    end
+-- Handlers.add("get-brandkit", "get-brandkit", function(msg)
+--     local tags = msg.Tags or {}
+--     local name = tags.Name or ""
+--     if not name or name == "" then
+--         sendError(msg, "Name is required")
+--         return
+--     end
 
-    local brandkit = Brandkits[name]
-    if not brandkit then
-        sendError(msg, "Brandkit not found")
-        return
-    end 
+--     local brandkit = Brandkits[name]
+--     if not brandkit then
+--         sendError(msg, "Brandkit not found")
+--         return
+--     end 
 
-    Send({
-        Target = msg.From,
-        Action = getAction(msg) .. "-response",
-        Data = json.encode(brandkit)
-    })
-end)
+--     Send({
+--         Target = msg.From,
+--         Action = getAction(msg) .. "-response",
+--         Data = json.encode(brandkit)
+--     })
+-- end)
 
-Handlers.add("update-brandkit", "update-brandkit", function(msg)
-    local tags = msg.Tags or {}
-    local name = tags.Name or ""
-    if not name or name == "" then
-        sendError(msg, "Name is required")
-        return
-    end
+-- Handlers.add("update-brandkit", "update-brandkit", function(msg)
+--     local tags = msg.Tags or {}
+--     local name = tags.Name or ""
+--     if not name or name == "" then
+--         sendError(msg, "Name is required")
+--         return
+--     end
 
-    local brandkit = Brandkits[name]
-    if not brandkit then
-        sendError(msg, "Brandkit not found")
-        return
-    end
+--     local brandkit = Brandkits[name]
+--     if not brandkit then
+--         sendError(msg, "Brandkit not found")
+--         return
+--     end
 
-    if brandkit.owner ~= msg.From then
-        sendError(msg, "Not authorized to update this brandkit")
-        return
-    end
+--     if brandkit.creator ~= msg.From then
+--         sendError(msg, "Not authorized to update this brandkit")
+--         return
+--     end
      
-    local description = tags.Description or brandkit.description
-    local folderId = tags["Arweave-Manifest-Id"] or brandkit.folderId
+--     local description = tags.Description or brandkit.description
+--     local folderId = tags["Arweave-Manifest-Id"] or brandkit.folderId
 
-    Brandkits[name] = {
-        id = brandkit.id,
-        name = brandkit.name,
-        url = brandkit.url or deriveUrl(brandkit.name),
-        description = description,
-        folderId = folderId,
-        owner = brandkit.owner
-    }
+--     Brandkits[name] = {
+--         id = brandkit.id,
+--         name = brandkit.name,
+--         url = brandkit.url or deriveUrl(brandkit.name),
+--         description = description,
+--         folderId = folderId,
+--         creator = brandkit.creator,
+--         is_active = brandkit.is_active
+--     }
 
-    Send({
-        Target = msg.From,
-        Action = getAction(msg) .. "-response",
-        Data = json.encode(Brandkits[name])
-    })
-end)
+--     Send({
+--         Target = msg.From,
+--         Action = getAction(msg) .. "-response",
+--         Data = json.encode(Brandkits[name])
+--     })
+-- end)

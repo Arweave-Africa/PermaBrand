@@ -1,5 +1,5 @@
 # MAIN RELEASE
-- name: Permabrand
+- name: Permabrand-Test
   file: index.lua
   resetModules: true
   module: ISShJH1ij-hPPt9St5UFFr_8Ys3Kj5cyg7zrMGt7H9s
