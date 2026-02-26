@@ -33,6 +33,15 @@ local function deriveUrl(name)
     return (name:gsub("%s+", "-"))
 end
 
+local function findBrandkitIndexById(id)
+    for i, brandkit in ipairs(Brandkits) do
+        if brandkit.id == id then
+            return i
+        end
+    end
+    return nil
+end
+
 Handlers.add("add-brandkit", "add-brandkit", function(msg)
     local tags = msg.Tags or {}
     local name = (tags.Name or ""):lower()
@@ -45,11 +54,7 @@ Handlers.add("add-brandkit", "add-brandkit", function(msg)
     end
 
     if #folder_id ~= 43 then
-        Send({
-            Target = msg.From,
-            Action = getAction(msg) .. "-error",
-            Data = json.encode(msg)
-        })
+        sendError(msg, "Invalid Arweave-Manifest-Id")
         return
     end
 
@@ -92,41 +97,57 @@ end)
 --     })
 -- end)
 
--- Handlers.add("update-brandkit", "update-brandkit", function(msg)
---     local tags = msg.Tags or {}
---     local name = tags.Name or ""
---     if not name or name == "" then
---         sendError(msg, "Name is required")
---         return
---     end
+Handlers.add("update-brandkit", "update-brandkit", function(msg)
+    local tags = msg.Tags or {}
+    local brandkitId = tags["Brandkit-Id"] or ""
 
---     local brandkit = Brandkits[name]
---     if not brandkit then
---         sendError(msg, "Brandkit not found")
---         return
---     end
+    if brandkitId == "" then
+        sendError(msg, "Brandkit-Id is required")
+        return
+    end
 
---     if brandkit.creator ~= msg.From then
---         sendError(msg, "Not authorized to update this brandkit")
---         return
---     end
-     
---     local description = tags.Description or brandkit.description
---     local folderId = tags["Arweave-Manifest-Id"] or brandkit.folderId
+    local index = findBrandkitIndexById(brandkitId)
+    if not index then
+        sendError(msg, "Brandkit not found")
+        return
+    end
 
---     Brandkits[name] = {
---         id = brandkit.id,
---         name = brandkit.name,
---         url = brandkit.url or deriveUrl(brandkit.name),
---         description = description,
---         folderId = folderId,
---         creator = brandkit.creator,
---         is_active = brandkit.is_active
---     }
+    local brandkit = Brandkits[index]
+    if brandkit.creator ~= msg.From then
+        sendError(msg, "Not authorized to update this brandkit")
+        return
+    end
 
---     Send({
---         Target = msg.From,
---         Action = getAction(msg) .. "-response",
---         Data = json.encode(Brandkits[name])
---     })
--- end)
+    local incomingName = tags.Name
+    local incomingDescription = tags.Description
+    local incomingFolderId = tags["Arweave-Manifest-Id"]
+
+    if incomingName and incomingName ~= "" and #incomingName <= 1 then
+        sendError(msg, "Name too short")
+        return
+    end
+
+    if incomingFolderId and incomingFolderId ~= "" and #incomingFolderId ~= 43 then
+        sendError(msg, "Invalid Arweave-Manifest-Id")
+        return
+    end
+
+    local nextName = incomingName and incomingName:lower() or brandkit.name
+    local nextDescription = incomingDescription or brandkit.description
+    local nextFolderId = incomingFolderId or brandkit.folderId
+
+    Brandkits[index] = {
+        id = brandkit.id,
+        name = nextName,
+        url = deriveUrl(nextName),
+        description = nextDescription,
+        folderId = nextFolderId,
+        creator = brandkit.creator,
+        is_active = brandkit.is_active
+    }
+
+    Send({
+      device = 'patch@1.0',
+      brandkits = Brandkits
+    })
+end)
