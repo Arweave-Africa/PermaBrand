@@ -62,7 +62,7 @@ const Brandkit = () => {
               )}
             </div>
 
-            <div className="flex min-h-[180px] flex-col justify-between">
+            <div className="flex md:min-h-[180px] flex-col justify-between">
               <div>
                 <h1 className="text-2xl font-[500] text-[#212121] md:text-4xl">
                   {brandkit.name}

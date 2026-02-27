@@ -7,7 +7,7 @@ function get_state(base, req)
     result['brandkit_'..i..'_url'] = kit.url
     result['brandkit_'..i..'_description'] = kit.description
     result['brandkit_'..i..'_folder_id'] = kit.folderId
-    result['brandkit_'..i..'_creator'] = kit.creator 
+    result['brandkit_'..i..'_creator'] = kit.creator
     result['brandkit_'..i..'_is_active'] = kit.is_active
   end
 

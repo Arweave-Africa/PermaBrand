@@ -1,5 +1,3 @@
-local json = require("json")
-
 Brandkits = Brandkits or {} -- Brandkit = { id, name, url, description, folderId, creator, is_active } }
 
 -- Sync once on process load
