@@ -5,8 +5,9 @@ const useFolder = (txid: string) => {
     isLoading,
     data: files,
     refetch,
-  } = useQuery({
+  } = useQuery<Record<string, { id: string }>>({
     queryKey: ["brandkit-folder", txid],
+    enabled: !!txid,
     queryFn: async () => {
       try {
         const result = await fetch(`https://arweave.net/raw/${txid}`);
@@ -20,7 +21,7 @@ const useFolder = (txid: string) => {
   });
   return {
     isLoading,
-    files,
+    files: files ?? {},
     refetch,
   };
 };

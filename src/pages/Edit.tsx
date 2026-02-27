@@ -1,24 +1,36 @@
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
+import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
+import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
+import { useQueryClient } from "@tanstack/react-query";
 import upload_logo from "../assets/upload.svg";
 import trash_logo from "../assets/trash.svg";
-import toast, { Toaster } from "react-hot-toast";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
-import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import { processId } from "../utils/constants";
-import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
-import { useNavigate } from "react-router-dom";
 import useAoconnect from "../hooks/useAoconnect";
+import useBrandkits from "../hooks/useBrandkits";
+import BrandkitPageLoader from "../components/skeletons/BrandkitPageLoader";
+import NotFound from "./404";
 
 type FileToDisplay = { file: File; url: string; name: string; key: string };
 
-const Create = () => {
-  const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const userAddress = useActiveAddress();
-  const { connect } = useConnection();
-  const { ao } = useAoconnect()
-  const [uploadingCost, setUploadingCost] = useState(0);
+const Edit = () => {
+  const { url } = useParams();
   const navigate = useNavigate();
+  const { ao } = useAoconnect();
+  const queryClient = useQueryClient();
+  const { connect } = useConnection();
+  const userAddress = useActiveAddress();
+  const { brandkits, isBrandkitsLoading } = useBrandkits();
+  const brandkit = useMemo(
+    () => brandkits?.find((entry) => entry.url === url),
+    [brandkits, url],
+  );
+
+  const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
+  const [uploadingCost, setUploadingCost] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getFileKey = (file: File) =>
     `${file.name}-${file.size}-${file.lastModified}`;
@@ -29,7 +41,7 @@ const Create = () => {
       return;
     }
     const uploadingPrice = await getUploadingPrice(
-      files.map((entry) => entry.file)
+      files.map((entry) => entry.file),
     );
     setUploadingCost(uploadingPrice);
   };
@@ -41,7 +53,9 @@ const Create = () => {
       return;
     }
 
-    const filteredFiles = Array.from(files).filter((file) => file.name !== ".DS_Store");
+    const filteredFiles = Array.from(files).filter(
+      (file) => file.name !== ".DS_Store",
+    );
     const newEntries = filteredFiles.map((file) => ({
       file,
       url: URL.createObjectURL(file),
@@ -50,16 +64,14 @@ const Create = () => {
     }));
 
     const existingKeys = new Set(selectedFiles.map((entry) => entry.key));
-    const uniqueNewEntries = newEntries.filter((entry) => !existingKeys.has(entry.key));
+    const uniqueNewEntries = newEntries.filter(
+      (entry) => !existingKeys.has(entry.key),
+    );
     const nextFiles = [...selectedFiles, ...uniqueNewEntries];
 
     setSelectedFiles(nextFiles);
     await updateUploadingCost(nextFiles);
     e.target.value = "";
-  };
-
-  const connectWallet = async () => {
-    await connect();
   };
 
   const handleDeleteFiles = () => {
@@ -79,66 +91,77 @@ const Create = () => {
     await updateUploadingCost(nextFiles);
   };
 
-  const handleRegisterBrandkit = async (e: FormEvent<HTMLFormElement>) => {
+  const connectWallet = async () => {
+    await connect();
+  };
+
+  const handleUpdateBrandkit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!brandkit) return;
+
     const formData = new FormData(e.currentTarget);
+    const trimmedName = String(formData.get("name") ?? "").trim();
+    const trimmedDescription = String(formData.get("description") ?? "").trim();
+    const isNameChanged = trimmedName !== brandkit.name;
+    const isDescriptionChanged =
+      trimmedDescription !== (brandkit.description ?? "").trim();
+    const hasNewFiles = selectedFiles.length > 0;
 
-    const name = formData.get("name");
-    const description = formData.get("description");
-
-    if (selectedFiles.length === 0) {
-      return toast.error("No files selected");
-    }
-
-    if (!name) {
-      return toast.error("Name is missing");
+    if (!isNameChanged && !isDescriptionChanged && !hasNewFiles) {
+      return toast("Nothing to update");
     }
 
     setIsLoading(true);
-
     try {
-      const userBalance = await getARBalance(userAddress || "");
-      const uploadingPrice = await getUploadingPrice(
-        selectedFiles.map((entry) => entry.file)
-      );
-
-      if (userBalance < uploadingPrice) {
-        setIsLoading(false);
-        return toast.error(
-          "Your AR Balance is too low to upload your Brandkit on Arweave",
+      let manifestId = "";
+      if (hasNewFiles) {
+        const userBalance = await getARBalance(userAddress || "");
+        const price = await getUploadingPrice(
+          selectedFiles.map((entry) => entry.file),
         );
-      }
 
-      const signer = new ArconnectSigner(window.arweaveWallet);
-      const turbo = TurboFactory.authenticated({ signer });
-      const filteredFiles = selectedFiles
-        .map((entry) => entry.file)
-        .filter((file) => {
-          return file.name !== ".DS_Store";
-        },
-      );
+        if (userBalance < price) {
+          setIsLoading(false);
+          return toast.error(
+            "Your AR Balance is too low to upload updated assets",
+          );
+        }
 
-      const { manifestResponse } = await turbo.uploadFolder({
-        files: filteredFiles
-      });
+        const signer = new ArconnectSigner(window.arweaveWallet);
+        const turbo = TurboFactory.authenticated({ signer });
+        const filteredFiles = selectedFiles
+          .map((entry) => entry.file)
+          .filter((file) => file.name !== ".DS_Store");
 
-      if(!manifestResponse?.id) {
-        return toast.error("Failed to upload brandkit. Please try again.")
+        const { manifestResponse } = await turbo.uploadFolder({
+          files: filteredFiles,
+        });
+
+        if (!manifestResponse?.id) {
+          return toast.error("Failed to upload updated assets");
+        }
+        manifestId = manifestResponse.id;
       }
 
       const tags = [
-        { name: "Action", value: "add-brandkit" },
-        { name: "Name", value: name },
-        { name: "Arweave-Manifest-Id", value: manifestResponse.id },
+        { name: "Action", value: "update-brandkit" },
+        { name: "Brandkit-Id", value: brandkit.id },
       ];
 
-      if (description) {
-        tags.push({ name: "Description", value: description });
+      if (isNameChanged) {
+        tags.push({ name: "Name", value: trimmedName });
+      }
+      if (isDescriptionChanged) {
+        tags.push({ name: "Description", value: trimmedDescription });
+      }
+
+      if (manifestId) {
+        tags.push({ name: "Arweave-Manifest-Id", value: manifestId });
       }
 
       const messageId = await ao.message({
         process: processId,
-        tags
+        tags,
       });
 
       const res = await ao.result({
@@ -146,41 +169,62 @@ const Create = () => {
         process: processId,
       });
 
-      if(res.Error) {
-        throw new Error(res.Error)
-      } 
+      if (res.Error) {
+        throw new Error(res.Error);
+      }
 
-      toast.success("Brandkit uploaded and registered! Congratulations!");
-      navigate("/");
+      queryClient.invalidateQueries({ queryKey: ["brandkits-fetch"] });
+      toast.success("Brandkit updated");
+      const nextUrl = trimmedName.toLowerCase().replace(/\s+/g, "-");
+      navigate(`/${nextUrl}`);
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");
-    }
-    finally{
+    } finally {
       setIsLoading(false);
     }
   };
 
+  if (isBrandkitsLoading) return <BrandkitPageLoader />;
+  if (!brandkit) return <NotFound />;
+
+  const isCreator = userAddress === brandkit.creator;
   const hasFiles = selectedFiles.length > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden px-3 py-6 sm:px-8 md:py-10">
-      <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-[#dbe8ff]/60 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-[#d8f6e8]/60 blur-3xl" />
-
       <form
-        onSubmit={handleRegisterBrandkit}
+        onSubmit={handleUpdateBrandkit}
         className="relative mx-auto w-full max-w-3xl rounded-2xl border border-[#e5e7eb] bg-white/90 p-4 shadow-[0_16px_60px_-30px_rgba(17,24,39,0.35)] backdrop-blur sm:p-8"
       >
+        <button
+          type="button"
+          onClick={() => navigate(`/${brandkit.url}`)}
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d5dbe5] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f2937] transition hover:border-[#9ca7b8]"
+        >
+          <span aria-hidden="true">←</span>
+          Back to Brandkit
+        </button>
+
         <div className="mb-8">
           <p className="mb-2 inline-flex items-center rounded-full border border-[#dbe1ea] bg-[#f8fafc] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5f6b7a]">
-            Create Brandkit
+            Edit Brandkit
           </p>
           <p className="mt-2 text-sm text-[#5a6576]">
-            Select your asset(s). We will preserve them on
-            Arweave and register them instantly.
+            Update metadata and optionally upload a new asset set.
           </p>
         </div>
+
+        {!userAddress && (
+          <div className="mb-4 rounded-xl border border-[#e7edf6] bg-[#f8fbff] p-3 text-sm text-[#4f5d73]">
+            Connect the creator wallet to update this brandkit.
+          </div>
+        )}
+        {userAddress && !isCreator && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            Only the creator wallet can update this brandkit.
+          </div>
+        )}
 
         <div className="rounded-2xl border border-[#e5e7eb] bg-[#fbfcfd] p-3 sm:p-4">
           {hasFiles && (
@@ -203,7 +247,7 @@ const Create = () => {
               ))}
               <label
                 htmlFor="files-picker"
-                className="shrink-0 rounded-lg border border-dashed border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#1f2937] cursor-pointer transition hover:border-[#9ca7b8]"
+                className="shrink-0 cursor-pointer rounded-lg border border-dashed border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#1f2937] transition hover:border-[#9ca7b8]"
               >
                 Add more files
               </label>
@@ -224,10 +268,10 @@ const Create = () => {
             >
               <img src={upload_logo} alt="upload" className="mb-2 h-7 w-7" />
               <div className="text-sm font-medium text-[#1f2937]">
-                Choose one or multiple files to upload
+                Optional: upload new files to replace existing assets
               </div>
               <span className="mt-1 text-xs text-[#748094]">
-                PNG, JPG, SVG and more
+                Leave empty to keep current files
               </span>
               <span className="mt-3 rounded-lg border border-[#1f2937] px-4 py-1.5 text-xs font-semibold text-[#1f2937]">
                 Browse Files
@@ -259,7 +303,7 @@ const Create = () => {
               id="name"
               name="name"
               type="text"
-              placeholder="Enter your company name"
+              defaultValue={brandkit.name}
               className="h-11 rounded-xl border border-[#d5dbe5] bg-white px-4 outline-none transition placeholder:text-[#9aa4b3] focus:border-[#111827]"
             />
           </div>
@@ -270,12 +314,12 @@ const Create = () => {
           <label htmlFor="description" className="font-medium text-[#1f2937]">
             Description (optional)
           </label>
-          <textarea
-            id="description"
-            name="description"
-            placeholder="Brief description of your company or community"
-            className="h-28 resize-none rounded-xl border border-[#d5dbe5] bg-white px-4 py-3 outline-none transition placeholder:text-[#9aa4b3] focus:border-[#111827]"
-          />
+            <textarea
+              id="description"
+              name="description"
+              defaultValue={brandkit.description ?? ""}
+              className="h-28 resize-none rounded-xl border border-[#d5dbe5] bg-white px-4 py-3 outline-none transition placeholder:text-[#9aa4b3] focus:border-[#111827]"
+            />
         </div>
 
         <div className="mt-8 flex w-full justify-center sm:justify-end">
@@ -291,25 +335,26 @@ const Create = () => {
           {!isLoading && userAddress && (
             <button
               type="submit"
-              className="h-11 w-full rounded-xl bg-[#111827] text-sm font-semibold text-white transition hover:bg-[#0b1220] sm:w-52"
+              disabled={!isCreator}
+              className="h-11 w-full rounded-xl bg-[#111827] text-sm font-semibold text-white transition enabled:hover:bg-[#0b1220] disabled:cursor-not-allowed disabled:bg-[#111827]/50 sm:w-52"
             >
-              Upload Brandkit
+              Update Brandkit
             </button>
           )}
           {isLoading && (
             <button
               disabled
-              className="h-11 w-full cursor-not-allowed rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52 flex items-center justify-center gap-2"
+              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52"
             >
-              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Uploading...
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Updating...
             </button>
           )}
         </div>
       </form>
-      <Toaster position="top-center"/>
+      <Toaster position="top-center" />
     </div>
   );
 };
 
-export default Create;
+export default Edit;

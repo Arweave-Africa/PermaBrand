@@ -3,6 +3,7 @@ import Create from "./pages/Create";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Brandkit from "./pages/Brandkit";
+import Edit from "./pages/Edit";
 
 function App() {
   return (
@@ -12,7 +13,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/create" element={<Create />} />
-          <Route path="/brandkit/:brandkitId" element={<Brandkit />} />
+          <Route path="/edit/:url" element={<Edit />} />
+          <Route path="/:url" element={<Brandkit />} />
         </Routes>
       </BrowserRouter>
     </div>

@@ -1,0 +1,10 @@
+# MAIN RELEASE
+- name: Permabrand
+  file: index.lua
+  resetModules: true
+  module: ISShJH1ij-hPPt9St5UFFr_8Ys3Kj5cyg7zrMGt7H9s
+  tags:
+    - name: Process-Version
+      value: 1.0.0
+    # - name: Authority
+    #   value: n_XZJhUnmldNFo4dhajoPZWhBXuJk-OcQr5JQ49c4Zo #forward authority

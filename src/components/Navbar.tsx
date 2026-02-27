@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   return (
-    <div className="h-8 w-full bg-[#F3F3F3] p-2 md:p-8 flex items-center justify-between">
+    <div className="h-12 md:h-8 w-full bg-[#F3F3F3] py-2 px-4 sm:px-6 md:p-8 flex items-center justify-between">
       <Logo />
       <Logo />
     </div>
