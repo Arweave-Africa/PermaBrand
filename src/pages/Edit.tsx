@@ -192,7 +192,7 @@ const Edit = () => {
   const hasFiles = selectedFiles.length > 0;
 
   return (
-    <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden bg-gradient-to-b from-[#f7f8fa] via-[#f3f4f6] to-white px-3 py-6 sm:px-8 md:py-10">
+    <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden px-3 py-6 sm:px-8 md:py-10">
       <form
         onSubmit={handleUpdateBrandkit}
         className="relative mx-auto w-full max-w-3xl rounded-2xl border border-[#e5e7eb] bg-white/90 p-4 shadow-[0_16px_60px_-30px_rgba(17,24,39,0.35)] backdrop-blur sm:p-8"

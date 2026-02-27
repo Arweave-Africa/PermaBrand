@@ -164,7 +164,7 @@ const Create = () => {
   const hasFiles = selectedFiles.length > 0;
 
   return (
-    <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden bg-gradient-to-b from-[#f7f8fa] via-[#f3f4f6] to-white px-3 py-6 sm:px-8 md:py-10">
+    <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden px-3 py-6 sm:px-8 md:py-10">
       <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-[#dbe8ff]/60 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-10 h-64 w-64 rounded-full bg-[#d8f6e8]/60 blur-3xl" />
 
