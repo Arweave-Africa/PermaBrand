@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@ar.io/wayfinder-core": "^1.9.1",
     "@ardrive/turbo-sdk": "^1.41.0",
     "@arweave-wallet-kit/core": "^0.1.0",
     "@arweave-wallet-kit/react": "^0.1.0",

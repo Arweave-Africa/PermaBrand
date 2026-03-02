@@ -1,21 +1,31 @@
+import { Suspense, lazy } from "react";
 import Navbar from "./components/Navbar";
-import Create from "./pages/Create";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import Brandkit from "./pages/Brandkit";
-import Edit from "./pages/Edit";
+
+const Home = lazy(() => import("./pages/Home"));
+const Create = lazy(() => import("./pages/Create"));
+const Edit = lazy(() => import("./pages/Edit"));
+const Brandkit = lazy(() => import("./pages/Brandkit"));
+
+const AppLoader = () => (
+  <div className="flex min-h-[calc(100vh-var(--navbar-h))] w-full items-center justify-center text-sm text-[#4b5563]">
+    Loading...
+  </div>
+);
 
 function App() {
   return (
     <div className="min-h-screen w-screen">
       <BrowserRouter>
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/create" element={<Create />} />
-          <Route path="/edit/:url" element={<Edit />} />
-          <Route path="/:url" element={<Brandkit />} />
-        </Routes>
+        <Suspense fallback={<AppLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/edit/:url" element={<Edit />} />
+            <Route path="/:url" element={<Brandkit />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </div>
   );

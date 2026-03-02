@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { wayfinder } from "../lib/wayfinder";
 
 const useFolder = (txid: string) => {
   const {
@@ -10,11 +11,14 @@ const useFolder = (txid: string) => {
     enabled: !!txid,
     queryFn: async () => {
       try {
-        const result = await fetch(`https://arweave.net/raw/${txid}`);
-        const { paths } = await result.json();
+        const result = await wayfinder.request(`ar://${txid}`);
+        if (!result.ok) {
+          throw new Error(`Failed to fetch folder: ${result.status}`);
+        }
+        const data = (await result.json()) as { paths?: Record<string, { id: string }> };
 
-        return paths;
-      } catch (error) {
+        return data.paths ?? {};
+      } catch {
         throw new Error("Error fetching brandkit folder.");
       }
     },

@@ -76,8 +76,8 @@ const Home = () => {
           {!isBrandkitsLoading && !brandkitError && (
             <div className="flex flex-col items-center gap-4 flex-wrap pb-10">
               {(filteredBrandkits ?? []).map(
-                (brandkit: TBrandkit, index: number) => (
-                  <Brandkit key={index} brandkit={brandkit} />
+                (brandkit: TBrandkit) => (
+                  <Brandkit key={brandkit.id || brandkit.url} brandkit={brandkit} />
                 ),
               )}
             </div>

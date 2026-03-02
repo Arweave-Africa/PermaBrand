@@ -1,14 +1,12 @@
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
 import { useQueryClient } from "@tanstack/react-query";
 import upload_logo from "../assets/upload.svg";
 import trash_logo from "../assets/trash.svg";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
-import { processId } from "../utils/constants";
-import useAoconnect from "../hooks/useAoconnect";
+import { hb_url, processId, scheduler } from "../utils/constants";
 import useBrandkits from "../hooks/useBrandkits";
 import BrandkitPageLoader from "../components/skeletons/BrandkitPageLoader";
 import NotFound from "./404";
@@ -18,7 +16,6 @@ type FileToDisplay = { file: File; url: string; name: string; key: string };
 const Edit = () => {
   const { url } = useParams();
   const navigate = useNavigate();
-  const { ao } = useAoconnect();
   const queryClient = useQueryClient();
   const { connect } = useConnection();
   const userAddress = useActiveAddress();
@@ -31,6 +28,17 @@ const Edit = () => {
   const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
   const [uploadingCost, setUploadingCost] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const selectedFilesRef = useRef<Array<FileToDisplay>>([]);
+
+  useEffect(() => {
+    selectedFilesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
+  useEffect(() => {
+    return () => {
+      selectedFilesRef.current.forEach((entry) => URL.revokeObjectURL(entry.url));
+    };
+  }, []);
 
   const getFileKey = (file: File) =>
     `${file.name}-${file.size}-${file.lastModified}`;
@@ -113,8 +121,17 @@ const Edit = () => {
 
     setIsLoading(true);
     try {
+      const { connect: aoConnect, createDataItemSigner } = await import("@permaweb/aoconnect");
+      const ao = aoConnect({
+        MODE: "mainnet",
+        SCHEDULER: scheduler,
+        URL: hb_url,
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+
       let manifestId = "";
       if (hasNewFiles) {
+        const { ArconnectSigner, TurboFactory } = await import("@ardrive/turbo-sdk/web");
         const userBalance = await getARBalance(userAddress || "");
         const price = await getUploadingPrice(
           selectedFiles.map((entry) => entry.file),

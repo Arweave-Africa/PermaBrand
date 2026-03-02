@@ -84,8 +84,8 @@ const Brandkit = () => {
           </div>
 
           <div className="grid grid-cols-1 justify-items-center gap-5 pb-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {fileEntries.map(([key, value], index:number) => (
-              <LogoCard key={index} id={value.id} alt={key}  />
+            {fileEntries.map(([key, value]) => (
+              <LogoCard key={value.id || key} id={value.id} alt={key} />
             ))}
           </div>
           {fileCount === 0 && (

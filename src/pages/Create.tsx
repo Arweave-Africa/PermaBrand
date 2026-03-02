@@ -1,13 +1,11 @@
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import upload_logo from "../assets/upload.svg";
 import trash_logo from "../assets/trash.svg";
 import toast, { Toaster } from "react-hot-toast";
 import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
-import { processId } from "../utils/constants";
-import { ArconnectSigner, TurboFactory } from "@ardrive/turbo-sdk/web";
+import { hb_url, processId, scheduler } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
-import useAoconnect from "../hooks/useAoconnect";
 
 type FileToDisplay = { file: File; url: string; name: string; key: string };
 
@@ -16,9 +14,19 @@ const Create = () => {
   const [isLoading, setIsLoading] = useState(false);
   const userAddress = useActiveAddress();
   const { connect } = useConnection();
-  const { ao } = useAoconnect()
   const [uploadingCost, setUploadingCost] = useState(0);
+  const selectedFilesRef = useRef<Array<FileToDisplay>>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    selectedFilesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
+  useEffect(() => {
+    return () => {
+      selectedFilesRef.current.forEach((entry) => URL.revokeObjectURL(entry.url));
+    };
+  }, []);
 
   const getFileKey = (file: File) =>
     `${file.name}-${file.size}-${file.lastModified}`;
@@ -109,6 +117,12 @@ const Create = () => {
         );
       }
 
+      const [{ ArconnectSigner, TurboFactory }, { connect: aoConnect, createDataItemSigner }] =
+        await Promise.all([
+          import("@ardrive/turbo-sdk/web"),
+          import("@permaweb/aoconnect"),
+        ]);
+
       const signer = new ArconnectSigner(window.arweaveWallet);
       const turbo = TurboFactory.authenticated({ signer });
       const filteredFiles = selectedFiles
@@ -122,8 +136,8 @@ const Create = () => {
         files: filteredFiles
       });
 
-      if(!manifestResponse?.id) {
-        return toast.error("Failed to upload brandkit. Please try again.")
+      if (!manifestResponse?.id) {
+        return toast.error("Failed to upload brandkit. Please try again.");
       }
 
       const tags = [
@@ -136,6 +150,13 @@ const Create = () => {
         tags.push({ name: "Description", value: description });
       }
 
+      const ao = aoConnect({
+        MODE: "mainnet",
+        SCHEDULER: scheduler,
+        URL: hb_url,
+        signer: createDataItemSigner(window.arweaveWallet),
+      });
+
       const messageId = await ao.message({
         process: processId,
         tags
@@ -146,9 +167,9 @@ const Create = () => {
         process: processId,
       });
 
-      if(res.Error) {
-        throw new Error(res.Error)
-      } 
+      if (res.Error) {
+        throw new Error(res.Error);
+      }
 
       toast.success("Brandkit uploaded and registered! Congratulations!");
       navigate("/");
@@ -156,7 +177,7 @@ const Create = () => {
       console.log(error);
       toast.error("Something went wrong");
     }
-    finally{
+    finally {
       setIsLoading(false);
     }
   };
@@ -307,7 +328,7 @@ const Create = () => {
           )}
         </div>
       </form>
-      <Toaster position="top-center"/>
+      <Toaster position="top-center" />
     </div>
   );
 };
