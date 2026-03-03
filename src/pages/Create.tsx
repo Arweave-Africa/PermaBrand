@@ -1,98 +1,36 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import upload_logo from "../assets/upload.svg";
-import trash_logo from "../assets/trash.svg";
+import { FormEvent, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import { hb_url, processId, scheduler } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
-
-type FileToDisplay = { file: File; url: string; name: string; key: string };
+import FilePicker from "../components/FilePicker";
+import useUploadSelection from "../hooks/useUploadSelection";
+import { UploadFolderError, uploadFilesToArweave } from "../lib/uploadFiles";
 
 const Create = () => {
-  const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const userAddress = useActiveAddress();
   const { connect } = useConnection();
-  const [uploadingCost, setUploadingCost] = useState(0);
-  const selectedFilesRef = useRef<Array<FileToDisplay>>([]);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    selectedFilesRef.current = selectedFiles;
-  }, [selectedFiles]);
-
-  useEffect(() => {
-    return () => {
-      selectedFilesRef.current.forEach((entry) => URL.revokeObjectURL(entry.url));
-    };
-  }, []);
-
-  const getFileKey = (file: File) =>
-    `${file.name}-${file.size}-${file.lastModified}`;
-
-  const updateUploadingCost = async (files: Array<FileToDisplay>) => {
-    if (files.length === 0) {
-      setUploadingCost(0);
-      return;
-    }
-    const uploadingPrice = await getUploadingPrice(
-      files.map((entry) => entry.file)
-    );
-    setUploadingCost(uploadingPrice);
-  };
-
-  const handleBrandkitFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const { files } = e.target;
-    if (!files || files.length === 0) {
-      e.target.value = "";
-      return;
-    }
-
-    const filteredFiles = Array.from(files).filter((file) => file.name !== ".DS_Store");
-    const newEntries = filteredFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      name: file.name,
-      key: getFileKey(file),
-    }));
-
-    const existingKeys = new Set(selectedFiles.map((entry) => entry.key));
-    const uniqueNewEntries = newEntries.filter((entry) => !existingKeys.has(entry.key));
-    const nextFiles = [...selectedFiles, ...uniqueNewEntries];
-
-    setSelectedFiles(nextFiles);
-    await updateUploadingCost(nextFiles);
-    e.target.value = "";
-  };
+  const {
+    selectedFiles,
+    uploadingCost,
+    hasFiles,
+    handleFileInputChange,
+    handleDeleteFiles,
+    handleRemoveFile,
+  } = useUploadSelection();
 
   const connectWallet = async () => {
     await connect();
-  };
-
-  const handleDeleteFiles = () => {
-    selectedFiles.forEach((entry) => URL.revokeObjectURL(entry.url));
-    setSelectedFiles([]);
-    setUploadingCost(0);
-  };
-
-  const handleRemoveFile = async (key: string) => {
-    const fileToRemove = selectedFiles.find((entry) => entry.key === key);
-    if (fileToRemove) {
-      URL.revokeObjectURL(fileToRemove.url);
-    }
-
-    const nextFiles = selectedFiles.filter((entry) => entry.key !== key);
-    setSelectedFiles(nextFiles);
-    await updateUploadingCost(nextFiles);
   };
 
   const handleRegisterBrandkit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const name = formData.get("name");
-    const description = formData.get("description");
+    const name = String(formData.get("name") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
 
     if (selectedFiles.length === 0) {
       return toast.error("No files selected");
@@ -105,45 +43,21 @@ const Create = () => {
     setIsLoading(true);
 
     try {
-      const userBalance = await getARBalance(userAddress || "");
-      const uploadingPrice = await getUploadingPrice(
-        selectedFiles.map((entry) => entry.file)
-      );
-
-      if (userBalance < uploadingPrice) {
-        setIsLoading(false);
-        return toast.error(
-          "Your AR Balance is too low to upload your Brandkit on Arweave",
-        );
-      }
-
-      const [{ ArconnectSigner, TurboFactory }, { connect: aoConnect, createDataItemSigner }] =
-        await Promise.all([
-          import("@ardrive/turbo-sdk/web"),
-          import("@permaweb/aoconnect"),
-        ]);
-
-      const signer = new ArconnectSigner(window.arweaveWallet);
-      const turbo = TurboFactory.authenticated({ signer });
-      const filteredFiles = selectedFiles
-        .map((entry) => entry.file)
-        .filter((file) => {
-          return file.name !== ".DS_Store";
-        },
-      );
-
-      const { manifestResponse } = await turbo.uploadFolder({
-        files: filteredFiles
-      });
-
-      if (!manifestResponse?.id) {
-        return toast.error("Failed to upload brandkit. Please try again.");
-      }
+      const [{ connect: aoConnect, createDataItemSigner }, manifestId] = await Promise.all([
+        import("@permaweb/aoconnect"),
+        uploadFilesToArweave({
+          files: selectedFiles.map((entry) => entry.file),
+          userAddress: userAddress || "",
+          insufficientBalanceMessage:
+            "Your AR Balance is too low to upload your Brandkit on Arweave",
+          uploadFailedMessage: "Failed to upload brandkit. Please try again.",
+        }),
+      ]);
 
       const tags = [
         { name: "Action", value: "add-brandkit" },
         { name: "Name", value: name },
-        { name: "Arweave-Manifest-Id", value: manifestResponse.id },
+        { name: "Arweave-Manifest-Id", value: manifestId },
       ];
 
       if (description) {
@@ -159,7 +73,7 @@ const Create = () => {
 
       const messageId = await ao.message({
         process: processId,
-        tags
+        tags,
       });
 
       const res = await ao.result({
@@ -175,14 +89,15 @@ const Create = () => {
       navigate("/");
     } catch (error) {
       console.log(error);
-      toast.error("Something went wrong");
-    }
-    finally {
+      if (error instanceof UploadFolderError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong");
+      }
+    } finally {
       setIsLoading(false);
     }
   };
-
-  const hasFiles = selectedFiles.length > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden px-3 py-6 sm:px-8 md:py-10">
@@ -203,68 +118,16 @@ const Create = () => {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#e5e7eb] bg-[#fbfcfd] p-3 sm:p-4">
-          {hasFiles && (
-            <div className="relative flex h-32 items-center gap-3 overflow-x-auto pr-12">
-              {selectedFiles.map((file) => (
-                <div key={file.key} className="relative h-24 w-24 shrink-0">
-                  <img
-                    src={file.url}
-                    alt={file.name}
-                    className="h-24 w-24 rounded-lg border border-[#dde3eb] bg-white p-2 object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(file.key)}
-                    className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full border border-[#d8dee8] bg-white text-xs leading-none text-[#5a6576] transition hover:border-red-500 hover:text-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <label
-                htmlFor="files-picker"
-                className="shrink-0 rounded-lg border border-dashed border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#1f2937] cursor-pointer transition hover:border-[#9ca7b8]"
-              >
-                Add more files
-              </label>
-              <button
-                type="button"
-                onClick={handleDeleteFiles}
-                className="absolute right-1 top-1 h-8 w-8 rounded-full border border-[#d8dee8] bg-white p-1 transition hover:scale-105 hover:border-red-500"
-              >
-                <img src={trash_logo} alt="delete files" className="h-full w-full" />
-              </button>
-            </div>
-          )}
-
-          {!hasFiles && (
-            <label
-              htmlFor="files-picker"
-              className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#cfd7e3] bg-white text-center transition hover:border-[#9ca7b8] hover:bg-[#fafbff]"
-            >
-              <img src={upload_logo} alt="upload" className="mb-2 h-7 w-7" />
-              <div className="text-sm font-medium text-[#1f2937]">
-                Choose one or multiple files to upload
-              </div>
-              <span className="mt-1 text-xs text-[#748094]">
-                PNG, JPG, SVG and more
-              </span>
-              <span className="mt-3 rounded-lg border border-[#1f2937] px-4 py-1.5 text-xs font-semibold text-[#1f2937]">
-                Browse Files
-              </span>
-            </label>
-          )}
-
-          <input
-            onChange={handleBrandkitFileUpload}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            id="files-picker"
-          />
-        </div>
+        <FilePicker
+          files={selectedFiles}
+          hasFiles={hasFiles}
+          onFileInputChange={handleFileInputChange}
+          onDeleteFiles={handleDeleteFiles}
+          onRemoveFile={handleRemoveFile}
+          emptyTitle="Choose one or multiple files to upload"
+          emptyHint="PNG, JPG, SVG and more"
+          inputId="create-files-picker"
+        />
 
         <div className="mt-3 rounded-xl border border-[#e7edf6] bg-[#f8fbff] px-3 py-2 text-sm text-[#4f5d73]">
           Estimated upload cost:{" "}
@@ -320,9 +183,9 @@ const Create = () => {
           {isLoading && (
             <button
               disabled
-              className="h-11 w-full cursor-not-allowed rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52 flex items-center justify-center gap-2"
+              className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[#111827]/80 text-sm font-semibold text-white sm:w-52"
             >
-              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               Uploading...
             </button>
           )}

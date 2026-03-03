@@ -11,7 +11,7 @@ const useFolder = (txid: string) => {
     enabled: !!txid,
     queryFn: async () => {
       try {
-        const result = await wayfinder.request(`ar://${txid}`);
+        const result = await wayfinder.request(`ar:///raw/${txid}`);
         if (!result.ok) {
           throw new Error(`Failed to fetch folder: ${result.status}`);
         }

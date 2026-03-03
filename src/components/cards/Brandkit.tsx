@@ -22,7 +22,7 @@ const Brandkit: FC<{ brandkit: TBrandkit }> = ({ brandkit }) => {
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#D5D5D5] bg-[#F9F9F9]">
-            <img src={folder_icon} alt="" className="h-5 w-5" />
+            <img src={folder_icon} alt="folder" className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <h3 className="truncate text-base font-[500] text-[#212121] sm:text-lg">

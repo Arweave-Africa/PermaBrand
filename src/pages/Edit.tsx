@@ -1,17 +1,15 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useActiveAddress, useConnection } from "@arweave-wallet-kit/react";
 import { useQueryClient } from "@tanstack/react-query";
-import upload_logo from "../assets/upload.svg";
-import trash_logo from "../assets/trash.svg";
-import { getARBalance, getUploadingPrice } from "../lib/arweave";
 import { hb_url, processId, scheduler } from "../utils/constants";
 import useBrandkits from "../hooks/useBrandkits";
 import BrandkitPageLoader from "../components/skeletons/BrandkitPageLoader";
 import NotFound from "./404";
-
-type FileToDisplay = { file: File; url: string; name: string; key: string };
+import FilePicker from "../components/FilePicker";
+import useUploadSelection from "../hooks/useUploadSelection";
+import { UploadFolderError, uploadFilesToArweave } from "../lib/uploadFiles";
 
 const Edit = () => {
   const { url } = useParams();
@@ -25,79 +23,15 @@ const Edit = () => {
     [brandkits, url],
   );
 
-  const [selectedFiles, setSelectedFiles] = useState<Array<FileToDisplay>>([]);
-  const [uploadingCost, setUploadingCost] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const selectedFilesRef = useRef<Array<FileToDisplay>>([]);
-
-  useEffect(() => {
-    selectedFilesRef.current = selectedFiles;
-  }, [selectedFiles]);
-
-  useEffect(() => {
-    return () => {
-      selectedFilesRef.current.forEach((entry) => URL.revokeObjectURL(entry.url));
-    };
-  }, []);
-
-  const getFileKey = (file: File) =>
-    `${file.name}-${file.size}-${file.lastModified}`;
-
-  const updateUploadingCost = async (files: Array<FileToDisplay>) => {
-    if (files.length === 0) {
-      setUploadingCost(0);
-      return;
-    }
-    const uploadingPrice = await getUploadingPrice(
-      files.map((entry) => entry.file),
-    );
-    setUploadingCost(uploadingPrice);
-  };
-
-  const handleBrandkitFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const { files } = e.target;
-    if (!files || files.length === 0) {
-      e.target.value = "";
-      return;
-    }
-
-    const filteredFiles = Array.from(files).filter(
-      (file) => file.name !== ".DS_Store",
-    );
-    const newEntries = filteredFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      name: file.name,
-      key: getFileKey(file),
-    }));
-
-    const existingKeys = new Set(selectedFiles.map((entry) => entry.key));
-    const uniqueNewEntries = newEntries.filter(
-      (entry) => !existingKeys.has(entry.key),
-    );
-    const nextFiles = [...selectedFiles, ...uniqueNewEntries];
-
-    setSelectedFiles(nextFiles);
-    await updateUploadingCost(nextFiles);
-    e.target.value = "";
-  };
-
-  const handleDeleteFiles = () => {
-    selectedFiles.forEach((entry) => URL.revokeObjectURL(entry.url));
-    setSelectedFiles([]);
-    setUploadingCost(0);
-  };
-
-  const handleRemoveFile = async (key: string) => {
-    const fileToRemove = selectedFiles.find((entry) => entry.key === key);
-    if (fileToRemove) {
-      URL.revokeObjectURL(fileToRemove.url);
-    }
-
-    const nextFiles = selectedFiles.filter((entry) => entry.key !== key);
-    setSelectedFiles(nextFiles);
-    await updateUploadingCost(nextFiles);
-  };
+  const {
+    selectedFiles,
+    uploadingCost,
+    hasFiles,
+    handleFileInputChange,
+    handleDeleteFiles,
+    handleRemoveFile,
+  } = useUploadSelection();
 
   const connectWallet = async () => {
     await connect();
@@ -131,33 +65,13 @@ const Edit = () => {
 
       let manifestId = "";
       if (hasNewFiles) {
-        const { ArconnectSigner, TurboFactory } = await import("@ardrive/turbo-sdk/web");
-        const userBalance = await getARBalance(userAddress || "");
-        const price = await getUploadingPrice(
-          selectedFiles.map((entry) => entry.file),
-        );
-
-        if (userBalance < price) {
-          setIsLoading(false);
-          return toast.error(
+        manifestId = await uploadFilesToArweave({
+          files: selectedFiles.map((entry) => entry.file),
+          userAddress: userAddress || "",
+          insufficientBalanceMessage:
             "Your AR Balance is too low to upload updated assets",
-          );
-        }
-
-        const signer = new ArconnectSigner(window.arweaveWallet);
-        const turbo = TurboFactory.authenticated({ signer });
-        const filteredFiles = selectedFiles
-          .map((entry) => entry.file)
-          .filter((file) => file.name !== ".DS_Store");
-
-        const { manifestResponse } = await turbo.uploadFolder({
-          files: filteredFiles,
+          uploadFailedMessage: "Failed to upload updated assets",
         });
-
-        if (!manifestResponse?.id) {
-          return toast.error("Failed to upload updated assets");
-        }
-        manifestId = manifestResponse.id;
       }
 
       const tags = [
@@ -171,7 +85,6 @@ const Edit = () => {
       if (isDescriptionChanged) {
         tags.push({ name: "Description", value: trimmedDescription });
       }
-
       if (manifestId) {
         tags.push({ name: "Arweave-Manifest-Id", value: manifestId });
       }
@@ -196,7 +109,11 @@ const Edit = () => {
       navigate(`/${nextUrl}`);
     } catch (error) {
       console.log(error);
-      toast.error("Something went wrong");
+      if (error instanceof UploadFolderError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +123,6 @@ const Edit = () => {
   if (!brandkit) return <NotFound />;
 
   const isCreator = userAddress === brandkit.creator;
-  const hasFiles = selectedFiles.length > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-var(--navbar-h))] w-full overflow-hidden px-3 py-6 sm:px-8 md:py-10">
@@ -243,68 +159,16 @@ const Edit = () => {
           </div>
         )}
 
-        <div className="rounded-2xl border border-[#e5e7eb] bg-[#fbfcfd] p-3 sm:p-4">
-          {hasFiles && (
-            <div className="relative flex h-32 items-center gap-3 overflow-x-auto pr-12">
-              {selectedFiles.map((file) => (
-                <div key={file.key} className="relative h-24 w-24 shrink-0">
-                  <img
-                    src={file.url}
-                    alt={file.name}
-                    className="h-24 w-24 rounded-lg border border-[#dde3eb] bg-white p-2 object-contain"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(file.key)}
-                    className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full border border-[#d8dee8] bg-white text-xs leading-none text-[#5a6576] transition hover:border-red-500 hover:text-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <label
-                htmlFor="files-picker"
-                className="shrink-0 cursor-pointer rounded-lg border border-dashed border-[#cfd7e3] bg-white px-3 py-2 text-xs font-semibold text-[#1f2937] transition hover:border-[#9ca7b8]"
-              >
-                Add more files
-              </label>
-              <button
-                type="button"
-                onClick={handleDeleteFiles}
-                className="absolute right-1 top-1 h-8 w-8 rounded-full border border-[#d8dee8] bg-white p-1 transition hover:scale-105 hover:border-red-500"
-              >
-                <img src={trash_logo} alt="delete files" className="h-full w-full" />
-              </button>
-            </div>
-          )}
-
-          {!hasFiles && (
-            <label
-              htmlFor="files-picker"
-              className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#cfd7e3] bg-white text-center transition hover:border-[#9ca7b8] hover:bg-[#fafbff]"
-            >
-              <img src={upload_logo} alt="upload" className="mb-2 h-7 w-7" />
-              <div className="text-sm font-medium text-[#1f2937]">
-                Optional: upload new files to replace existing assets
-              </div>
-              <span className="mt-1 text-xs text-[#748094]">
-                Leave empty to keep current files
-              </span>
-              <span className="mt-3 rounded-lg border border-[#1f2937] px-4 py-1.5 text-xs font-semibold text-[#1f2937]">
-                Browse Files
-              </span>
-            </label>
-          )}
-
-          <input
-            onChange={handleBrandkitFileUpload}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            id="files-picker"
-          />
-        </div>
+        <FilePicker
+          files={selectedFiles}
+          hasFiles={hasFiles}
+          onFileInputChange={handleFileInputChange}
+          onDeleteFiles={handleDeleteFiles}
+          onRemoveFile={handleRemoveFile}
+          emptyTitle="Optional: upload new files to replace existing assets"
+          emptyHint="Leave empty to keep current files"
+          inputId="edit-files-picker"
+        />
 
         <div className="mt-3 rounded-xl border border-[#e7edf6] bg-[#f8fbff] px-3 py-2 text-sm text-[#4f5d73]">
           Estimated upload cost:{" "}
@@ -331,12 +195,12 @@ const Edit = () => {
           <label htmlFor="description" className="font-medium text-[#1f2937]">
             Description (optional)
           </label>
-            <textarea
-              id="description"
-              name="description"
-              defaultValue={brandkit.description ?? ""}
-              className="h-28 resize-none rounded-xl border border-[#d5dbe5] bg-white px-4 py-3 outline-none transition placeholder:text-[#9aa4b3] focus:border-[#111827]"
-            />
+          <textarea
+            id="description"
+            name="description"
+            defaultValue={brandkit.description ?? ""}
+            className="h-28 resize-none rounded-xl border border-[#d5dbe5] bg-white px-4 py-3 outline-none transition placeholder:text-[#9aa4b3] focus:border-[#111827]"
+          />
         </div>
 
         <div className="mt-8 flex w-full justify-center sm:justify-end">
